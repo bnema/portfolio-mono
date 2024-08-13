@@ -25,3 +25,9 @@ dist-ssr
 
 
 *.env
+
+# Frontend build artifacts
+frontend/dist/
+
+# Backend build artifacts
+backend/bin/
