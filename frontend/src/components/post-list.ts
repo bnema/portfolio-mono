@@ -15,7 +15,6 @@ export class PostList extends LitElement {
   @state() private expandedPostId: number | null = null;
 
   private apiUrl = import.meta.env.VITE_API_URL;
-  private static token = import.meta.env.VITE_JWT_TOKEN;
 
   connectedCallback() {
     super.connectedCallback();
@@ -24,11 +23,7 @@ export class PostList extends LitElement {
 
   async fetchPosts() {
     try {
-      const response = await fetch(`${this.apiUrl}/posts`, {
-        headers: {
-          Authorization: `Bearer ${PostList.token}`,
-        },
-      });
+      const response = await fetch(`${this.apiUrl}/posts`);
       if (!response.ok) throw new Error("Failed to fetch posts");
       this.posts = await response.json();
       this.loading = false;

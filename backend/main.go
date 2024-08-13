@@ -1,15 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"os"
-	"time"
+	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/charmbracelet/log"
 	"github.com/joho/godotenv"
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -27,26 +24,6 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	secret := os.Getenv("SECRET")
-	if secret == "" {
-		log.Fatal("SECRET is required in .env file")
-	}
-
-	// Generate JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp": time.Now().Add(time.Hour * 72).Unix(),
-	})
-
-	tokenString, err := token.SignedString([]byte(secret))
-	if err != nil {
-		log.Fatalf("Error generating JWT token: %v", err)
-	}
-
-	// Output the generated JWT token
-	fmt.Printf("JWT token: %s", tokenString)
-	// new line
-	fmt.Println()
-
 	e := echo.New()
 	e.HideBanner = true
 
@@ -54,9 +31,15 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	//
+	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+	if len(allowedOrigins) == 0 {
+		log.Fatal("ALLOWED_ORIGINS is required in .env file")
+	}
+
 	// CORS
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:4173"},
+		AllowOrigins:     allowedOrigins,
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowCredentials: true,
@@ -69,11 +52,6 @@ func main() {
 
 	// Grouped routes that require JWT
 	r := e.Group("/api")
-
-	// Apply JWT middleware only to this group
-	r.Use(echojwt.WithConfig(echojwt.Config{
-		SigningKey: []byte(secret),
-	}))
 
 	// Protected routes
 	r.GET("/posts", getPosts)
