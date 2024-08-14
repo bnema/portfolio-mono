@@ -200,7 +200,7 @@ func ObfuscatePrivateCommits(commits []models.Commit) []models.Commit {
 }
 
 func obfuscateString(s string) string {
-	obfuscatedChars := []rune("▆▅█▉▇▊▄▋▌_▍▃▂▁")
+	obfuscatedChars := []rune("░▒▓█▄▀■□▢▣▤▥▦▧▨▩▆▅█▉▇▊▄▋▌_▍▃▂▁")
 	r := getRNG()
 
 	var result strings.Builder
