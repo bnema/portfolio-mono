@@ -171,6 +171,7 @@ func fetchCommitsFromRepo(ctx context.Context, client *github.Client, owner, rep
 		for _, commit := range commitList {
 			newCommit := models.Commit{
 				ID:        commit.GetSHA(),
+				RepoName:  repo,
 				Message:   commit.GetCommit().GetMessage(),
 				Timestamp: commit.GetCommit().GetAuthor().GetDate().Format(time.RFC3339),
 				URL:       commit.GetHTMLURL(),
@@ -189,6 +190,7 @@ func fetchCommitsFromRepo(ctx context.Context, client *github.Client, owner, rep
 func ObfuscatePrivateCommits(commits []models.Commit) []models.Commit {
 	for i, commit := range commits {
 		if commit.IsPrivate {
+			commits[i].RepoName = obfuscateString(commit.RepoName)
 			commits[i].Message = obfuscateString(commit.Message)
 			commits[i].ID = obfuscateString(commit.ID)
 			commits[i].URL = "#"

@@ -3,6 +3,7 @@ import { customElement, state } from "lit/decorators.js";
 
 interface Commit {
   id: string;
+  repo: string;
   message: string;
   timestamp: string;
   url: string;
