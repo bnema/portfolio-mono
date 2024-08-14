@@ -1,9 +1,10 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { formatDistanceToNow } from "date-fns";
 
 interface Commit {
   id: string;
-  repo: string;
+  repo_name: string;
   message: string;
   timestamp: string;
   url: string;
@@ -58,19 +59,26 @@ export class CommitList extends LitElement {
     }
   };
 
+  formatTimestamp(timestamp: string): string {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  }
+
   render() {
     return html`
-      <h1>Commits</h1>
+      <h1>Latest activity</h1>
       <ul>
         ${this.commits.map(
           (commit) => html`
             <li>
               <h2>
-                <a href="${commit.url}" target="_blank">${commit.message}</a>
+                <a href=${commit.url} target="_blank" rel="noopener noreferrer">
+                  ${commit.repo_name}
+                </a>
+                <span> - ${this.formatTimestamp(commit.timestamp)}</span>
               </h2>
-              <p>Commit ID: ${commit.id}</p>
-              <p>Timestamp: ${new Date(commit.timestamp).toLocaleString()}</p>
-              <p>Private: ${commit.is_private ? "Yes" : "No"}</p>
+              <p>
+                ${commit.message.split("\n").map((line) => html`${line}<br />`)}
+              </p>
             </li>
           `,
         )}
@@ -84,7 +92,7 @@ export class CommitList extends LitElement {
   static styles = css`
     :host {
       display: block;
-      font-family: sans-serif;
+      font-family: "Fira Sans", sans-serif;
       max-width: 800px;
       margin: 0 auto;
       padding: 20px;
@@ -105,7 +113,14 @@ export class CommitList extends LitElement {
     }
     h2 {
       color: #666;
+      margin: 0;
     }
+
+    h2 span {
+      color: #999;
+      font-size: 0.8em;
+    }
+
     a {
       text-decoration: none;
       color: inherit;
