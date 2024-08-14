@@ -1,15 +1,8 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { formatDistanceToNow } from "date-fns";
-
-interface Commit {
-  id: string;
-  repo_name: string;
-  message: string;
-  timestamp: string;
-  url: string;
-  is_private: boolean;
-}
+import { Commit } from "./types.ts";
+import { CommitService } from "./commit-service";
 
 @customElement("commit-list")
 export class CommitList extends LitElement {
@@ -20,40 +13,34 @@ export class CommitList extends LitElement {
   @state() private hasMore = true;
   @state() private newCommits: Commit[] = [];
 
-  private apiUrl = import.meta.env.VITE_API_URL;
+  private commitService: CommitService;
   private limit = 20;
   private refreshInterval: number | null = null;
+
+  constructor() {
+    super();
+    this.commitService = new CommitService(import.meta.env.VITE_API_URL);
+  }
 
   connectedCallback() {
     super.connectedCallback();
     this.fetchCommits();
-    this.addEventListener("scroll", this.handleScroll);
-
-    this.refreshInterval = setInterval(() => {
-      this.refreshCommits();
-    }, 60000);
+    this.setupInfiniteScroll();
+    this.setupRefreshInterval();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener("scroll", this.handleScroll);
-
-    // Clear the refresh interval when the component is disconnected
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-    }
+    this.teardownInfiniteScroll();
+    this.clearRefreshInterval();
   }
 
-  async fetchCommits() {
+  private async fetchCommits() {
     if (this.loading || !this.hasMore) return;
 
     this.loading = true;
     try {
-      const response = await fetch(
-        `${this.apiUrl}/commits?page=${this.page}&limit=${this.limit}`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch commits");
-      const data = await response.json();
+      const data = await this.commitService.fetchCommits(this.page, this.limit);
       this.commits = [...this.commits, ...data.commits];
       this.hasMore = this.commits.length < data.total_count;
       this.page++;
@@ -64,23 +51,15 @@ export class CommitList extends LitElement {
     }
   }
 
-  // Fetch the latest commits and update the list
-  async refreshCommits() {
+  private async refreshCommits() {
     if (this.loading) return;
     this.loading = true;
     try {
-      const response = await fetch(
-        `${this.apiUrl}/commits?page=1&limit=${this.limit}`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch commits");
-      const data = await response.json();
+      const data = await this.commitService.fetchCommits(1, this.limit);
       this.newCommits = data.commits;
-
-      // Compare new commits with existing ones and update as needed
       this.updateCommits();
-
       this.hasMore = this.commits.length < data.total_count;
-      this.page = 2; // Set to 2 for next fetch if needed
+      this.page = 2;
     } catch (e) {
       this.error = e instanceof Error ? e.message : "An unknown error occurred";
     } finally {
@@ -88,7 +67,6 @@ export class CommitList extends LitElement {
     }
   }
 
-  // Update the commits array with new commits
   private updateCommits() {
     const updatedCommits = [...this.newCommits];
     let changed = false;
@@ -105,40 +83,65 @@ export class CommitList extends LitElement {
     }
   }
 
-  handleScroll = () => {
+  private setupInfiniteScroll() {
+    this.addEventListener("scroll", this.handleScroll);
+  }
+
+  private teardownInfiniteScroll() {
+    this.removeEventListener("scroll", this.handleScroll);
+  }
+
+  private handleScroll = () => {
     if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
       this.fetchCommits();
     }
   };
 
-  formatTimestamp(timestamp: string): string {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  private setupRefreshInterval() {
+    this.refreshInterval = setInterval(() => {
+      this.refreshCommits();
+    }, 60000);
+  }
+
+  private clearRefreshInterval() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
 
   render() {
     return html`
       <h1>Latest activity</h1>
       <ul>
-        ${this.commits.map(
-          (commit) => html`
-            <li>
-              <h2>
-                <a href=${commit.url} target="_blank" rel="noopener noreferrer">
-                  ${commit.repo_name}
-                </a>
-                <span> - ${this.formatTimestamp(commit.timestamp)}</span>
-              </h2>
-              <p>
-                ${commit.message.split("\n").map((line) => html`${line}<br />`)}
-              </p>
-            </li>
-          `,
-        )}
+        ${this.commits.map((commit) => this.renderCommit(commit))}
       </ul>
-      ${this.loading ? html`<p>Loading commits...</p>` : null}
-      ${this.error ? html`<p>Error: ${this.error}</p>` : null}
-      ${!this.hasMore ? html`<p>No more commits to load.</p>` : null}
+      ${this.renderStatus()}
     `;
+  }
+
+  private renderCommit(commit: Commit) {
+    return html`
+      <li>
+        <h2>
+          <a href=${commit.url} target="_blank" rel="noopener noreferrer">
+            ${commit.repo_name}
+          </a>
+          <span> - ${this.formatTimestamp(commit.timestamp)}</span>
+        </h2>
+        <p>${commit.message.split("\n").map((line) => html`${line}<br />`)}</p>
+      </li>
+    `;
+  }
+
+  private renderStatus() {
+    if (this.loading) return html`<p>Loading commits...</p>`;
+    if (this.error) return html`<p>Error: ${this.error}</p>`;
+    if (!this.hasMore) return html`<p>No more commits to load.</p>`;
+    return null;
+  }
+
+  private formatTimestamp(timestamp: string): string {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   }
 
   static styles = css`
