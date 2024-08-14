@@ -123,6 +123,12 @@ export class CommitList extends LitElement {
     return html`
       <li>
         <h2>
+          <img
+            src="https://github.com/favicon.ico"
+            alt="Github"
+            width="24"
+            height="24"
+          />
           <a href=${commit.url} target="_blank" rel="noopener noreferrer">
             ${commit.repo_name}
           </a>
@@ -148,9 +154,8 @@ export class CommitList extends LitElement {
     :host {
       display: block;
       font-family: "Fira Sans", sans-serif;
-      max-width: 800px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 2rem;
       height: 100vh;
       overflow-y: auto;
     }
@@ -159,23 +164,28 @@ export class CommitList extends LitElement {
       padding: 0;
     }
     li {
-      margin-bottom: 20px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 20px;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 2rem;
     }
     h1 {
-      color: #333;
+      color: var(--heading-color);
     }
     h2 {
-      color: #666;
+      color: var(--subheading-color);
       margin: 0;
+      line-height: 1.5;
     }
-
+    h2 img {
+      vertical-align: middle;
+      margin-right: 0.5rem;
+      opacity: 0.7;
+    }
     h2 span {
-      color: #999;
+      color: var(--muted-color);
       font-size: 0.8em;
+      vertical-align: middle;
     }
-
     a {
       text-decoration: none;
       color: inherit;
