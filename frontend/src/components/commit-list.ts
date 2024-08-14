@@ -18,19 +18,30 @@ export class CommitList extends LitElement {
   @state() private error: string | null = null;
   @state() private page = 1;
   @state() private hasMore = true;
+  @state() private newCommits: Commit[] = [];
 
   private apiUrl = import.meta.env.VITE_API_URL;
   private limit = 20;
+  private refreshInterval: number | null = null;
 
   connectedCallback() {
     super.connectedCallback();
     this.fetchCommits();
     this.addEventListener("scroll", this.handleScroll);
+
+    this.refreshInterval = setInterval(() => {
+      this.refreshCommits();
+    }, 60000);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener("scroll", this.handleScroll);
+
+    // Clear the refresh interval when the component is disconnected
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
 
   async fetchCommits() {
@@ -50,6 +61,47 @@ export class CommitList extends LitElement {
       this.error = e instanceof Error ? e.message : "An unknown error occurred";
     } finally {
       this.loading = false;
+    }
+  }
+
+  // Fetch the latest commits and update the list
+  async refreshCommits() {
+    if (this.loading) return;
+    this.loading = true;
+    try {
+      const response = await fetch(
+        `${this.apiUrl}/commits?page=1&limit=${this.limit}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch commits");
+      const data = await response.json();
+      this.newCommits = data.commits;
+
+      // Compare new commits with existing ones and update as needed
+      this.updateCommits();
+
+      this.hasMore = this.commits.length < data.total_count;
+      this.page = 2; // Set to 2 for next fetch if needed
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "An unknown error occurred";
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  // Update the commits array with new commits
+  private updateCommits() {
+    const updatedCommits = [...this.newCommits];
+    let changed = false;
+
+    for (const commit of this.commits) {
+      if (!this.newCommits.some((newCommit) => newCommit.id === commit.id)) {
+        updatedCommits.push(commit);
+        changed = true;
+      }
+    }
+
+    if (changed || updatedCommits.length !== this.commits.length) {
+      this.commits = updatedCommits;
     }
   }
 
