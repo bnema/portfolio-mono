@@ -18,6 +18,7 @@
     --border-color: rgba(0, 0, 0, 0.1);
     --link-color: #747bff;
     --link-hover-color: #535bf2;
+    --title-color: #000;
 
     transition:
         background-color 0.3s ease,
@@ -35,6 +36,7 @@
     --border-color: rgba(255, 255, 255, 0.1);
     --link-color: #646cff;
     --link-hover-color: #535bf2;
+    --title-color: #cee3e5;
 }
 
 a {
@@ -76,7 +78,7 @@ h1 {
 #app {
     display: flex;
     flex-direction: row;
-    max-width: 2160px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
     gap: 2rem;
@@ -136,8 +138,18 @@ header {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    padding: 1rem 2rem;
     background-color: var(--background-color-darker);
     border-bottom: 1px solid var(--border-color);
     background-image: var(--noise);
+}
+
+header h1 {
+    color: var(--title-color);
+    font-size: 1.7em;
+    margin: 0;
+    padding-left: 1rem;
+}
+
+header theme-switcher {
+    padding-right: 1rem;
 }

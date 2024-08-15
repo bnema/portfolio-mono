@@ -13,7 +13,7 @@ export class ThemeSwitcher extends LitElement {
       display: none;
     }
     .slider {
-      background-color: #ccc;
+      background-color: rgba(0, 0, 0, 0.1);
       bottom: 0;
       cursor: pointer;
       left: 0;
@@ -23,7 +23,7 @@ export class ThemeSwitcher extends LitElement {
       transition: 0.4s;
     }
     .slider:before {
-      background-color: #fff;
+      background-color: #f1c40f;
       bottom: 4px;
       content: "";
       height: 26px;
@@ -32,8 +32,9 @@ export class ThemeSwitcher extends LitElement {
       transition: 0.4s;
       width: 26px;
     }
+
     input:checked + .slider {
-      background-color: #66bb6a;
+      // background-color: #66bb6a;
     }
     input:checked + .slider:before {
       transform: translateX(26px);
@@ -43,6 +44,18 @@ export class ThemeSwitcher extends LitElement {
     }
     .slider.round:before {
       border-radius: 50%;
+    }
+    .emoji {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+    }
+    .sun {
+      left: 6px;
+    }
+    .moon {
+      right: 6px;
     }
   `;
 
@@ -63,14 +76,16 @@ export class ThemeSwitcher extends LitElement {
           .checked=${this.checked}
           @change=${this.switchTheme}
         />
-        <div class="slider round"></div>
+        <div class="slider round">
+          <span class="emoji sun">☀️</span>
+          <span class="emoji moon">🌑</span>
+        </div>
       </label>
     `;
   }
 
   detectColorScheme() {
     let theme = "light"; // default to light
-
     if (localStorage.getItem("theme")) {
       theme = localStorage.getItem("theme") || "light";
     } else if (
@@ -79,7 +94,6 @@ export class ThemeSwitcher extends LitElement {
     ) {
       theme = "dark";
     }
-
     this.setTheme(theme);
   }
 
