@@ -15,16 +15,20 @@
         <title>Commits Messages</title>
     </head>
     <body>
+        <header>
+            <h1>bamen.dev</h1>
+            <theme-switcher></theme-switcher>
+        </header>
         <div id="app">
             <div class="leftpane">
                 <div class="about">
-                    <h1>bamen.dev</h1>
                     <p>
                         Hi, my name is Brice, I'm a fullstack developer and this
                         is my very minimal portfolio.
                     </p>
                 </div>
                 <div class="social">
+                    <h3>Find me on:</h3>
                     <!-- Github -->
                     <a href="https://github.com/bnema" target="_blank">
                         github.com/bnema
@@ -37,10 +41,17 @@
                         linkedin.com/in/brice-amen
                     </a>
                 </div>
-                <theme-switcher></theme-switcher>
             </div>
+            <projects-list></projects-list>
             <commit-list></commit-list>
         </div>
+        <footer>
+            <p>
+                Made with ❤️ by
+                <a href="https://bamen.dev" target="_blank">bamen.dev</a>
+            </p>
+        </footer>
+        <script type="module" src="/src/components/projects-list.ts"></script>
         <script type="module" src="/src/components/commit-list.ts"></script>
         <script type="module" src="/src/components/theme-switcher.ts"></script>
     </body>

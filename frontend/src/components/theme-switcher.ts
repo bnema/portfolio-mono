@@ -1,48 +1,102 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
 
-@customElement("theme-switcher")
 export class ThemeSwitcher extends LitElement {
-  @property({ type: Boolean }) darkTheme = true;
-
   static styles = css`
-    :host {
+    .theme-switch {
       display: inline-block;
+      height: 34px;
+      position: relative;
+      width: 60px;
     }
-    button {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
+    .theme-switch input {
+      display: none;
+    }
+    .slider {
+      background-color: #ccc;
+      bottom: 0;
       cursor: pointer;
-      padding: 0.5rem;
-      border-radius: 50%;
-      transition: background-color 0.3s;
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transition: 0.4s;
     }
-    button:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+    .slider:before {
+      background-color: #fff;
+      bottom: 4px;
+      content: "";
+      height: 26px;
+      left: 4px;
+      position: absolute;
+      transition: 0.4s;
+      width: 26px;
+    }
+    input:checked + .slider {
+      background-color: #66bb6a;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .slider.round {
+      border-radius: 34px;
+    }
+    .slider.round:before {
+      border-radius: 50%;
     }
   `;
 
+  @property({ type: Boolean })
+  checked = false;
+
+  constructor() {
+    super();
+    this.detectColorScheme();
+  }
+
   render() {
     return html`
-      <button @click=${this.toggleTheme} aria-label="Toggle theme">
-        ${this.darkTheme ? "☀️" : "🌙"}
-      </button>
+      <label class="theme-switch" for="checkbox">
+        <input
+          type="checkbox"
+          id="checkbox"
+          .checked=${this.checked}
+          @change=${this.switchTheme}
+        />
+        <div class="slider round"></div>
+      </label>
     `;
   }
 
-  private toggleTheme() {
-    this.darkTheme = !this.darkTheme;
-    document.body.classList.toggle("light-theme", !this.darkTheme);
-    this.dispatchEvent(
-      new CustomEvent("theme-changed", {
-        detail: { darkTheme: this.darkTheme },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+  detectColorScheme() {
+    let theme = "light"; // default to light
+
+    if (localStorage.getItem("theme")) {
+      theme = localStorage.getItem("theme") || "light";
+    } else if (
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    ) {
+      theme = "dark";
+    }
+
+    this.setTheme(theme);
+  }
+
+  setTheme(theme: string) {
+    document.documentElement.setAttribute("data-theme", theme);
+    this.checked = theme === "dark";
+    localStorage.setItem("theme", theme);
+  }
+
+  switchTheme(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const newTheme = target.checked ? "dark" : "light";
+    this.setTheme(newTheme);
   }
 }
+
+customElements.define("theme-switcher", ThemeSwitcher);
 
 declare global {
   interface HTMLElementTagNameMap {
