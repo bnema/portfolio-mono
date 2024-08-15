@@ -1,8 +1,8 @@
 package api
 
 import (
-	"go-api-commits/services"
 	"net/http"
+	"portfolio-mono/services"
 	"strconv"
 
 	"github.com/labstack/echo/v4"

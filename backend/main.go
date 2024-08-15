@@ -1,9 +1,9 @@
 package main
 
 import (
-	"go-api-commits/api"
-	"go-api-commits/config"
-	"go-api-commits/services"
+	"portfolio-mono/api"
+	"portfolio-mono/config"
+	"portfolio-mono/services"
 
 	"github.com/charmbracelet/log"
 	"github.com/labstack/echo/v4"

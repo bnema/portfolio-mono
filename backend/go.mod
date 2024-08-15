@@ -1,4 +1,4 @@
-module go-api-commits
+module portfolio-mono
 
 go 1.23
 

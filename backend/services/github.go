@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"go-api-commits/config"
-	"go-api-commits/models"
+	"portfolio-mono/config"
+	"portfolio-mono/models"
 
 	"github.com/google/go-github/v63/github"
 	"golang.org/x/oauth2"
