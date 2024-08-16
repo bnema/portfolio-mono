@@ -7,4 +7,5 @@ export interface Commit {
   timestamp: string;
   url: string;
   is_private: boolean;
+  isNew: boolean;
 }

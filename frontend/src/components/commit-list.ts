@@ -24,7 +24,7 @@ export class CommitList extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.fetchCommits();
+    this.refreshCommits();
     this.setupInfiniteScroll();
     this.setupRefreshInterval();
   }
@@ -41,9 +41,21 @@ export class CommitList extends LitElement {
     this.loading = true;
     try {
       const data = await this.commitService.fetchCommits(this.page, this.limit);
-      this.commits = [...this.commits, ...data.commits];
+      const newCommits = data.commits.map((commit) => ({
+        ...commit,
+        isNew: true,
+      }));
+      this.commits = [...this.commits, ...newCommits];
       this.hasMore = this.commits.length < data.total_count;
       this.page++;
+
+      // Schedule removal of 'isNew' flag
+      setTimeout(() => {
+        this.commits = this.commits.map((commit) => ({
+          ...commit,
+          isNew: false,
+        }));
+      }, 500); // Match this with your animation duration
     } catch (e) {
       this.error = e instanceof Error ? e.message : "An unknown error occurred";
     } finally {
@@ -84,15 +96,19 @@ export class CommitList extends LitElement {
   }
 
   private setupInfiniteScroll() {
-    this.addEventListener("scroll", this.handleScroll);
+    window.addEventListener("scroll", this.handleScroll);
   }
 
   private teardownInfiniteScroll() {
-    this.removeEventListener("scroll", this.handleScroll);
+    window.removeEventListener("scroll", this.handleScroll);
   }
 
   private handleScroll = () => {
-    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
+    const scrollY = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+
+    if (scrollY + windowHeight >= documentHeight - 200) {
       this.fetchCommits();
     }
   };
@@ -121,20 +137,22 @@ export class CommitList extends LitElement {
 
   private renderCommit(commit: Commit) {
     return html`
-      <li>
-        <h2>
-          <img
-            src="https://github.com/favicon.ico"
-            alt="Github"
-            width="24"
-            height="24"
-          />
-          <a href=${commit.url} target="_blank" rel="noopener noreferrer">
-            ${commit.repo_name}
-          </a>
-          <span> - ${this.formatTimestamp(commit.timestamp)}</span>
-        </h2>
-        <p>${commit.message.split("\n").map((line) => html`${line}<br />`)}</p>
+      <li class="${commit.isNew ? "new-commit" : ""}">
+        <div class="commit-header">
+          <h2 class=${commit.is_private ? "private-commit" : ""}>
+            <a href=${commit.url} target="_blank" rel="noopener noreferrer">
+              ${commit.repo_name}
+            </a>
+          </h2>
+          <span class="origin-info"
+            ><sl-icon name="github"></sl-icon> ${this.formatTimestamp(
+              commit.timestamp,
+            )}</span
+          >
+        </div>
+        <p class=${commit.is_private ? "private-commit" : ""}>
+          ${commit.message.split("\n").map((line) => html`${line}<br />`)}
+        </p>
       </li>
     `;
   }
@@ -156,9 +174,35 @@ export class CommitList extends LitElement {
       font-family: "Fira Sans", sans-serif;
       margin: 0 auto;
       padding: 2rem;
-      height: 100vh;
-      overflow-y: auto;
+      // height: 100vh;
+      // overflow-y: auto;
     }
+
+    .private-commit {
+      filter: blur(2px);
+    }
+
+    .commit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .origin-info {
+      display: flex;
+      align-items: center;
+      color: var(--muted-color);
+      font-size: 0.9em;
+    }
+
+    .origin-info sl-icon {
+      margin-right: 0.5em;
+    }
+
+    .timestamp {
+      vertical-align: middle;
+    }
+
     ul {
       list-style-type: none;
       padding: 0;
@@ -166,7 +210,7 @@ export class CommitList extends LitElement {
     li {
       margin-bottom: 2rem;
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 2rem;
+      padding-bottom: 0.5rem;
     }
     h1 {
       color: var(--heading-color);
@@ -192,6 +236,21 @@ export class CommitList extends LitElement {
     }
     a:hover {
       text-decoration: underline;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .new-commit {
+      animation: fadeIn 1s ease-out;
     }
   `;
 }

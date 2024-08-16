@@ -99,6 +99,10 @@ export class ThemeSwitcher extends LitElement {
 
   setTheme(theme: string) {
     document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.classList.toggle(
+      "sl-theme-dark",
+      theme === "dark",
+    );
     this.checked = theme === "dark";
     localStorage.setItem("theme", theme);
   }

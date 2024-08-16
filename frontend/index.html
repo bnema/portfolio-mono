@@ -12,6 +12,17 @@
             rel="stylesheet"
         />
         <link rel="stylesheet" href="/src/style.css" />
+        <link
+            rel="stylesheet"
+            media="(prefers-color-scheme:light)"
+            href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.16.0/cdn/themes/light.css"
+        />
+        <link
+            rel="stylesheet"
+            media="(prefers-color-scheme:dark)"
+            href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.16.0/cdn/themes/dark.css"
+            onload="document.documentElement.classList.add('sl-theme-dark');"
+        />
         <title>Commits Messages</title>
     </head>
     <body>
@@ -30,6 +41,7 @@
                 <div class="social">
                     <h3>Find me on:</h3>
                     <!-- Github -->
+                    <sl-icon name="github"></sl-icon>
                     <a href="https://github.com/bnema" target="_blank">
                         github.com/bnema
                     </a>
@@ -54,5 +66,9 @@
         <!-- <script type="module" src="/src/components/projects-list.ts"></script> -->
         <script type="module" src="/src/components/commit-list.ts"></script>
         <script type="module" src="/src/components/theme-switcher.ts"></script>
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.16.0/cdn/shoelace-autoloader.js"
+        ></script>
     </body>
 </html>
