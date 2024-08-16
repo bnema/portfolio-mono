@@ -14,7 +14,7 @@ export class CommitList extends LitElement {
   @state() private newCommits: Commit[] = [];
 
   private commitService: CommitService;
-  private limit = 20;
+  private limit = 10;
   private refreshInterval: number | null = null;
 
   constructor() {
@@ -55,7 +55,7 @@ export class CommitList extends LitElement {
           ...commit,
           isNew: false,
         }));
-      }, 500); // Match this with your animation duration
+      }, 500);
     } catch (e) {
       this.error = e instanceof Error ? e.message : "An unknown error occurred";
     } finally {
@@ -131,6 +131,11 @@ export class CommitList extends LitElement {
       <ul>
         ${this.commits.map((commit) => this.renderCommit(commit))}
       </ul>
+      <div class="load-more">
+        <button @click=${this.fetchCommits} ?disabled=${this.loading}>
+          Load more
+        </button>
+      </div>
       ${this.renderStatus()}
     `;
   }
@@ -247,6 +252,17 @@ export class CommitList extends LitElement {
         opacity: 1;
         transform: translateY(0);
       }
+    }
+
+    .load-more {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .load-more button {
+      padding: 0.5rem 1rem;
+      font-size: 0.8em;
+      rounded: 1rem;
     }
 
     .new-commit {
