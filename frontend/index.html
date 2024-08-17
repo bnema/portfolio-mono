@@ -27,35 +27,67 @@
     </head>
     <body>
         <header>
-            <h1>bamen.dev</h1>
             <theme-switcher></theme-switcher>
+            <div id="build-version">v0.02</div>
         </header>
         <div id="app">
             <div class="leftpane">
                 <div class="about">
+                    <p>Hi, my name is Brice,</p>
                     <p>
-                        Hi, my name is Brice, I'm a fullstack developer based in
-                        France and this is my very minimal portfolio.
+                        I'm a fullstack developer based in France and this is my
+                        very minimalist portfolio so you know that I exist.
                     </p>
                 </div>
-                <div class="social">
-                    <h3>Find me on:</h3>
+                <div class="socials">
                     <!-- Github -->
-                    <sl-icon name="github"></sl-icon>
-                    <a href="https://github.com/bnema" target="_blank">
-                        github.com/bnema
-                    </a>
+                    <div class="one-social-link">
+                        <a href="https://github.com/bnema" target="_blank">
+                            <sl-icon name="github"></sl-icon>
+                        </a>
+                    </div>
                     <!-- Linkedin -->
-                    <a
-                        href="https://www.linkedin.com/in/brice-amen/"
-                        target="_blank"
-                    >
-                        linkedin.com/in/brice-amen
-                    </a>
+                    <div class="one-social-link">
+                        <a
+                            href="https://www.linkedin.com/in/brice-amen/"
+                            target="_blank"
+                        >
+                            <sl-icon name="linkedin"></sl-icon>
+                        </a>
+                    </div>
+                    <!-- Twitter -->
+                    <div class="one-social-link">
+                        <a href="https://twitter.com/bamen_dev" target="_blank">
+                            <sl-icon name="twitter"></sl-icon>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <projects-list></projects-list>
-            <commit-list></commit-list>
+            <div class="rightpane">
+                <div id="projects">
+                    <h1>Projects</h1>
+                    <p>
+                        Here are some of the projects I'm currently maintaining
+                        or working on.
+                    </p>
+                    <div class="projects-list">
+                        <div class="card-projects">
+                            <sl-card class="card-header">
+                                <div slot="header">Gart</div>
+
+                                Command-line tool for managing dotfiles.
+                            </sl-card>
+                            <sl-card class="card-header">
+                                <div slot="header">Gordon</div>
+
+                                Minimalist self-hosted containerized app
+                                deployment tool.
+                            </sl-card>
+                        </div>
+                    </div>
+                </div>
+                <commit-list></commit-list>
+            </div>
         </div>
         <footer>
             <p>

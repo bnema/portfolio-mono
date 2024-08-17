@@ -6,13 +6,13 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 900 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)' opacity='0.1'/%3E%3C/svg%3E");
+    --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)' opacity='0.1'/%3E%3C/svg%3E");
 
     /* Light theme (default) */
     --background-color: #fffdea;
-    --background-color-darker: #f0f0d0;
-    --text-color: #000;
-    --heading-color: #111;
+    --background-color-darker: #f7f1d7;
+    --text-color: #292524;
+    --heading-color: #292524;
     --subheading-color: #444;
     --muted-color: #777;
     --border-color: rgba(0, 0, 0, 0.1);
@@ -28,12 +28,12 @@
 /* Dark theme */
 [data-theme="dark"] {
     --background-color: #1c1a1e;
-    --background-color-darker: #161418;
+    --background-color-darker: rgba(0, 0, 0, 0.3);
     --text-color: #ffffff;
     --heading-color: #ffffff;
     --subheading-color: #f0f0f0;
     --muted-color: #b0b0b0;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color: rgba(255, 255, 255, 0.05);
     --link-color: #646cff;
     --link-hover-color: #535bf2;
     --title-color: #cee3e5;
@@ -68,11 +68,10 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     background-image: var(--noise);
-    height: 100vh;
     overflow-y: auto;
 }
 h1 {
-    font-size: 3.2em;
+    font-size: 2em;
     margin: 0;
     line-height: 1.1;
     color: var(--heading-color);
@@ -85,15 +84,60 @@ h1 {
     padding: 2rem;
     gap: 2rem;
 }
+#projects {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-projects {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+sl-card::part(base) {
+    color: var(--text-color);
+    background-color: var(--background-color-darker);
+    border: 1px solid var(--border-color);
+}
+
+.card-header {
+    max-width: 100%;
+}
+
+.card-header [slot="header"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-header h3 {
+    margin: 0;
+}
+
+.card-header sl-icon-button {
+    font-size: var(--sl-font-size-medium);
+}
 .leftpane {
     font-size: 1.2em;
     flex: 1 1 25%; /* This will take about 1/4 of the space */
     min-width: 250px; /* Ensures readability on smaller screens */
 }
-.social {
+.socials {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 1rem;
     margin-top: 1rem;
+}
+.socials a {
+    color: var(--text-color);
+    transition:
+        background-color 0.25s,
+        color 0.25s;
+}
+.socials a:hover {
+    color: var(--link-color);
 }
 commit-list {
     flex: 1 1 75%; /* This will take about 3/4 of the space */
@@ -143,13 +187,6 @@ header {
     background-color: var(--background-color-darker);
     border-bottom: 1px solid var(--border-color);
     background-image: var(--noise);
-}
-
-header h1 {
-    color: var(--title-color);
-    font-size: 1.7em;
-    margin: 0;
-    padding-left: 1rem;
 }
 
 header theme-switcher {

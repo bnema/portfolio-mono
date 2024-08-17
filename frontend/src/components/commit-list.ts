@@ -219,6 +219,7 @@ export class CommitList extends LitElement {
     }
     h1 {
       color: var(--heading-color);
+      font-size: 1.5em;
     }
     h2 {
       color: var(--subheading-color);
@@ -236,11 +237,13 @@ export class CommitList extends LitElement {
       vertical-align: middle;
     }
     a {
-      text-decoration: none;
-      color: inherit;
+      font-weight: 500;
+      color: var(--text-color);
+      text-decoration: inherit;
+      transition: color 0.2s;
     }
     a:hover {
-      text-decoration: underline;
+      color: var(--link-hover-color);
     }
 
     @keyframes fadeIn {

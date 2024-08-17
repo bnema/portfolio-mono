@@ -1,116 +1,85 @@
 import { LitElement, html, css } from "lit";
-import { property } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 
 export class ThemeSwitcher extends LitElement {
   static styles = css`
-    .theme-switch {
+    :host {
       display: inline-block;
-      height: 34px;
-      position: relative;
-      width: 60px;
     }
-    .theme-switch input {
-      display: none;
-    }
-    .slider {
-      background-color: rgba(0, 0, 0, 0.1);
-      bottom: 0;
+    button {
+      background: none;
+      border: none;
       cursor: pointer;
-      left: 0;
-      position: absolute;
-      right: 0;
-      top: 0;
-      transition: 0.4s;
+      padding: 0;
     }
-    .slider:before {
-      background-color: #f1c40f;
-      bottom: 4px;
-      content: "";
-      height: 26px;
-      left: 4px;
-      position: absolute;
-      transition: 0.4s;
-      width: 26px;
-    }
-
-    input:checked + .slider {
-      // background-color: #66bb6a;
-    }
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    .slider.round {
-      border-radius: 34px;
-    }
-    .slider.round:before {
-      border-radius: 50%;
-    }
-    .emoji {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 20px;
-    }
-    .sun {
-      left: 6px;
-    }
-    .moon {
-      right: 6px;
+    sl-icon {
+      padding-top: 0.5rem;
+      padding-left: 0.5rem;
+      font-size: 1rem;
+      color: var(--text-color);
     }
   `;
 
-  @property({ type: Boolean })
-  checked = false;
+  @property({ type: String })
+  theme: "light" | "dark" = "light";
+
+  @state()
+  private prefersDarkScheme = false;
 
   constructor() {
     super();
-    this.detectColorScheme();
+    this.initializeTheme();
   }
 
   render() {
+    const tooltipContent =
+      this.theme === "light" ? "Switch to dark theme" : "Switch to light theme";
+
     return html`
-      <label class="theme-switch" for="checkbox">
-        <input
-          type="checkbox"
-          id="checkbox"
-          .checked=${this.checked}
-          @change=${this.switchTheme}
-        />
-        <div class="slider round">
-          <span class="emoji sun">☀️</span>
-          <span class="emoji moon">🌑</span>
-        </div>
-      </label>
+      <sl-tooltip content="${tooltipContent}">
+        <button @click=${this.toggleTheme}>
+          ${this.theme === "light"
+            ? html`<sl-icon
+                name="moon-stars"
+                aria-label="Switch to dark theme"
+              ></sl-icon>`
+            : html`<sl-icon
+                name="brightness-high"
+                aria-label="Switch to light theme"
+              ></sl-icon>`}
+        </button>
+      </sl-tooltip>
     `;
   }
 
-  detectColorScheme() {
-    let theme = "light"; // default to light
-    if (localStorage.getItem("theme")) {
-      theme = localStorage.getItem("theme") || "light";
-    } else if (
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    ) {
-      theme = "dark";
+  private initializeTheme() {
+    this.prefersDarkScheme = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+
+    const storedTheme = localStorage.getItem("theme");
+
+    if (storedTheme) {
+      this.theme = storedTheme as "light" | "dark";
+    } else {
+      this.theme = this.prefersDarkScheme ? "dark" : "light";
     }
-    this.setTheme(theme);
+
+    this.applyTheme();
   }
 
-  setTheme(theme: string) {
-    document.documentElement.setAttribute("data-theme", theme);
+  private toggleTheme() {
+    this.theme = this.theme === "light" ? "dark" : "light";
+    this.applyTheme();
+  }
+
+  private applyTheme() {
+    document.documentElement.setAttribute("data-theme", this.theme);
     document.documentElement.classList.toggle(
       "sl-theme-dark",
-      theme === "dark",
+      this.theme === "dark",
     );
-    this.checked = theme === "dark";
-    localStorage.setItem("theme", theme);
-  }
-
-  switchTheme(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const newTheme = target.checked ? "dark" : "light";
-    this.setTheme(newTheme);
+    localStorage.setItem("theme", this.theme);
   }
 }
 
