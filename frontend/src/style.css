@@ -92,18 +92,24 @@ h1 {
 
 .card-projects {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-evenly;
     gap: 1rem;
+}
+
+.card-header {
+    max-width: 49%;
+    width: 49%;
+    min-width: 300px;
 }
 
 sl-card::part(base) {
     color: var(--text-color);
     background-color: var(--background-color-darker);
     border: 1px solid var(--border-color);
-}
-
-.card-header {
-    max-width: 100%;
+    min-height: 200px;
 }
 
 .card-header [slot="header"] {
@@ -143,18 +149,7 @@ commit-list {
     flex: 1 1 75%; /* This will take about 3/4 of the space */
     min-width: 300px; /* Ensures readability on smaller screens */
 }
-@media (max-width: 768px) {
-    #app {
-        flex-wrap: wrap;
-        flex-direction: column;
-    }
-    .leftpane,
-    commit-list {
-        font-size: 1em;
-        flex-basis: 100%; /* Full width on smaller screens */
-        overflow-y: visible;
-    }
-}
+
 button {
     border-radius: 8px;
     border: 1px solid transparent;
@@ -191,4 +186,28 @@ header {
 
 header theme-switcher {
     padding-right: 1rem;
+}
+
+@media (max-width: 1199px) {
+    .card-header {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    #app {
+        flex-wrap: wrap;
+        flex-direction: column;
+    }
+    .leftpane,
+    commit-list {
+        font-size: 1em;
+        flex-basis: 100%; /* Full width on smaller screens */
+        overflow-y: visible;
+    }
+    .card-header {
+        max-width: 100%;
+        width: 100%;
+    }
 }
