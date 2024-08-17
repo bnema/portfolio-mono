@@ -12,11 +12,18 @@ export class ThemeSwitcher extends LitElement {
       cursor: pointer;
       padding: 0;
     }
+
+    sl-icon:hover {
+      text-decoration: none;
+      color: var(--link-color);
+    }
+
     sl-icon {
       padding-top: 0.5rem;
       padding-left: 0.5rem;
       font-size: 1rem;
       color: var(--text-color);
+      transition: color 0.2s;
     }
   `;
 
