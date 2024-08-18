@@ -178,7 +178,6 @@ export class CommitList extends LitElement {
       display: block;
       font-family: "Fira Sans", sans-serif;
       margin: 0 auto;
-      padding: 2rem;
       // height: 100vh;
       // overflow-y: auto;
     }
@@ -219,7 +218,8 @@ export class CommitList extends LitElement {
     }
     h1 {
       color: var(--heading-color);
-      font-size: 1.5em;
+      font-size: 1.6em;
+      padding-bottom: 1rem;
     }
     h2 {
       color: var(--subheading-color);

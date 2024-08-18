@@ -30,62 +30,72 @@
             <theme-switcher></theme-switcher>
         </header>
         <div id="app">
-            <div class="leftpane">
-                <div class="about">
-                    <p>Hi, my name is Brice,</p>
-                    <p>
-                        I'm a fullstack developer based in France and this is my
-                        very minimalist portfolio so you know that I exist.
-                    </p>
+            <div class="about">
+                <p>Hi, I'm Brice!</p>
+                <p>I'm a Golang and TypeScript developer based in France.</p>
+                <p>
+                    I'm passionate about Linux, Open source, Web minimalism and
+                    I love crafting tools that solve problems - especially my
+                    own.
+                </p>
+                <p>
+                    I'm currently looking for new opportunities. Feel free to
+                    reach out!
+                </p>
+            </div>
+            <div class="socials">
+                <!-- Email -->
+                <div class="one-social-link">
+                    <a href="mailto:hi@bamen.dev">
+                        <sl-icon name="envelope"></sl-icon>
+                    </a>
                 </div>
-                <div class="socials">
-                    <!-- Github -->
-                    <div class="one-social-link">
-                        <a href="https://github.com/bnema" target="_blank">
-                            <sl-icon name="github"></sl-icon>
-                        </a>
-                    </div>
-                    <!-- Linkedin -->
-                    <div class="one-social-link">
-                        <a
-                            href="https://www.linkedin.com/in/brice-amen/"
-                            target="_blank"
-                        >
-                            <sl-icon name="linkedin"></sl-icon>
-                        </a>
-                    </div>
-                    <!-- Twitter -->
-                    <div class="one-social-link">
-                        <a href="https://twitter.com/briceamen" target="_blank">
-                            <sl-icon name="twitter-x"></sl-icon>
-                        </a>
-                    </div>
+                <!-- Github -->
+                <div class="one-social-link">
+                    <a href="https://github.com/bnema" target="_blank">
+                        <sl-icon name="github"></sl-icon>
+                    </a>
+                </div>
+                <!-- Linkedin -->
+                <div class="one-social-link">
+                    <a
+                        href="https://www.linkedin.com/in/brice-amen/"
+                        target="_blank"
+                    >
+                        <sl-icon name="linkedin"></sl-icon>
+                    </a>
+                </div>
+                <!-- Twitter -->
+                <div class="one-social-link">
+                    <a href="https://twitter.com/briceamen" target="_blank">
+                        <sl-icon name="twitter-x"></sl-icon>
+                    </a>
                 </div>
             </div>
-            <div class="rightpane">
-                <div id="projects">
-                    <h1>Projects</h1>
-                    <p>
-                        Here are some of the projects I'm currently maintaining
-                        or working on.
-                    </p>
-                    <div class="card-projects">
-                        <sl-card class="card-header">
-                            <div slot="header">Gart</div>
 
-                            Command-line tool for managing dotfiles.
-                        </sl-card>
-                        <sl-card class="card-header">
-                            <div slot="header">Gordon</div>
+            <div id="projects">
+                <h1>Projects</h1>
+                <p>
+                    Here are some of the projects I'm currently maintaining or
+                    working on.
+                </p>
+                <div class="card-projects">
+                    <sl-card class="card-header">
+                        <div slot="header">Gart</div>
 
-                            Minimalist self-hosted containerized app deployment
-                            tool.
-                        </sl-card>
-                    </div>
+                        Command-line tool for managing dotfiles.
+                    </sl-card>
+                    <sl-card class="card-header">
+                        <div slot="header">Gordon</div>
+
+                        Minimalist self-hosted containerized app deployment
+                        tool.
+                    </sl-card>
                 </div>
-                <commit-list></commit-list>
             </div>
+            <commit-list></commit-list>
         </div>
+
         <footer>
             <p>
                 v0.02 - Made with
