@@ -3,6 +3,11 @@
     <head>
         <meta charset="UTF-8" />
         <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <meta
+            name="description"
+            content="Brice Amen - Golang and TypeScript developer"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,7 +28,7 @@
             href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.16.0/cdn/themes/dark.css"
             onload="document.documentElement.classList.add('sl-theme-dark');"
         />
-        <title>Commits Messages</title>
+        <title>bamen.dev - Brice Amen</title>
     </head>
     <body>
         <header>
@@ -80,17 +85,37 @@
                     working on.
                 </p>
                 <div class="card-projects">
-                    <sl-card class="card-header">
-                        <div slot="header">Gart</div>
+                    <a href="https://github.com/bnema/gart">
+                        <sl-card class="card-overview">
+                            <div slot="header">
+                                Gart
+                                <sl-icon name="github"></sl-icon>
+                            </div>
+                            <p>
+                                Command-line tool that helps you manage your
+                                dotfiles across different systems. You can
+                                easily keep your configuration files up to date
+                                and maintain a consistent setup across multiple
+                                machines.
+                            </p>
+                        </sl-card>
+                    </a>
+                    <a href="https://github.com/bnema/gordon">
+                        <sl-card class="card-overview">
+                            <div slot="header">
+                                Gordon
+                                <sl-icon name="github"></sl-icon>
+                            </div>
 
-                        Command-line tool for managing dotfiles.
-                    </sl-card>
-                    <sl-card class="card-header">
-                        <div slot="header">Gordon</div>
-
-                        Minimalist self-hosted containerized app deployment
-                        tool.
-                    </sl-card>
+                            <p>
+                                Gordon is a tool that aims to simplify the
+                                deployment of your containerized web
+                                applications. It automates the process of
+                                integrating your locally built image into your
+                                self-hosted setup.
+                            </p>
+                        </sl-card>
+                    </a>
                 </div>
             </div>
             <commit-list></commit-list>
