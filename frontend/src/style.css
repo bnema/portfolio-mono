@@ -11,6 +11,7 @@
     /* Light theme (default) */
     --background-color: #fffdea;
     --background-color-darker: #f7f1d7;
+    --background-color-lighter: #fffdf4;
     --text-color: #292524;
     --heading-color: #292524;
     --subheading-color: #444;
@@ -31,7 +32,8 @@
 /* Dark theme */
 [data-theme="dark"] {
     --background-color: #1c1a1e;
-    --background-color-darker: rgba(0, 0, 0, 0.3);
+    --background-color-darker: rgba(0, 0, 0, 0.2);
+    --background-color-lighter: rgba(255, 255, 255, 0.01);
     --text-color: #ffffff;
     --heading-color: #ffffff;
     --subheading-color: #f0f0f0;
@@ -45,6 +47,7 @@
 * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
 }
 
 a {
@@ -115,8 +118,8 @@ h1 {
 }
 
 sl-card::part(base) {
-    color: var(--text-color);
     background-color: var(--background-color-darker);
+    color: var(--text-color);
     transition:
         background-color 0.3s ease,
         color 0.3s ease;
@@ -128,10 +131,12 @@ sl-card::part(base):hover {
 }
 
 [data-theme="dark"] sl-card {
+    background-color: var(--background-color-darker);
     --border-color: rgba(255, 255, 255, 0.15);
 }
 
 [data-theme="light"] sl-card {
+    background-color: var(--background-color-darker);
     --border-color: rgba(0, 0, 0, 0.1);
 }
 
@@ -145,20 +150,24 @@ sl-card::part(base):hover {
 
 .card-overview [slot="header"] sl-icon {
     font-size: var(--sl-font-size-medium);
+    font-size: 1.25rem;
 }
-
-.leftpane {
-    font-size: 1.2em;
-    flex: 1 1 25%; /* This will take about 1/4 of the space */
-    max-width: 300px; /* Ensures readability on smaller screens */
-}
-
-.rightpane {
-    flex: 1;
-}
-
 .about {
-    font-size: 1.2em;
+    background-color: var(--background-color-lighter);
+    padding: 1rem;
+    border-radius: 0.2rem;
+    border: 1px solid var(--border-color);
+}
+
+.about h2 {
+    font-size: 1.5em;
+    line-height: 1.1;
+    color: var(--heading-color);
+}
+
+.about p {
+    font-size: 1.1em;
+    line-height: 1.1;
 }
 .socials {
     display: flex;
@@ -229,12 +238,6 @@ footer p {
 
 @media (max-width: 768px) {
     #app {
-        padding: 0;
-    }
-    .leftpane,
-    commit-list {
-        font-size: 1em;
-        flex-basis: 100%; /* Full width on smaller screens */
-        overflow-y: visible;
+        padding: 10px;
     }
 }
