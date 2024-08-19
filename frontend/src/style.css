@@ -17,8 +17,7 @@
     --subheading-color: #444;
     --muted-color: #777;
     --border-color: rgba(0, 0, 0, 0.1);
-    --link-color: #747bff;
-    --link-hover-color: #535bf2;
+    --link-color: #ff0066;
     --title-color: #000;
 
     transition:
@@ -39,8 +38,7 @@
     --subheading-color: #f0f0f0;
     --muted-color: #b0b0b0;
     --border-color: rgba(255, 255, 255, 0.1);
-    --link-color: #646cff;
-    --link-hover-color: #535bf2;
+    --link-color: #ff0066;
     --title-color: #cee3e5;
 }
 
@@ -132,7 +130,7 @@ sl-card::part(base):hover {
 
 [data-theme="dark"] sl-card {
     background-color: var(--background-color-darker);
-    --border-color: rgba(255, 255, 255, 0.15);
+    --border-color: rgba(255, 255, 255, 0.3);
 }
 
 [data-theme="light"] sl-card {

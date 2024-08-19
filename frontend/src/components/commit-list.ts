@@ -141,25 +141,57 @@ export class CommitList extends LitElement {
   }
 
   private renderCommit(commit: Commit) {
+    const repoUrl = this.extractRepoUrl(commit.url);
+
     return html`
       <li class="${commit.isNew ? "new-commit" : ""}">
-        <div class="commit-header">
-          <h2 class=${commit.is_private ? "private-commit" : ""}>
-            <a href=${commit.url} target="_blank" rel="noopener noreferrer">
-              ${commit.repo_name}
-            </a>
-          </h2>
-          <span class="origin-info"
-            ><sl-icon name="github"></sl-icon> ${this.formatTimestamp(
-              commit.timestamp,
-            )}</span
+        <div class="commit-header starship-style">
+          <span class="user">brice</span>
+          <span class="separator">in</span>
+          <a
+            href=${repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="repo"
+          >
+            <sl-icon name="github"></sl-icon>
+            ${commit.repo_name}
+          </a>
+          <span class="separator">on</span>
+          <a
+            href=${commit.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="branch"
+          >
+            <sl-icon name="git"></sl-icon>
+            main
+          </a>
+          <span class="timestamp"
+            >${this.formatTimestamp(commit.timestamp)}</span
           >
         </div>
         <p class=${commit.is_private ? "private-commit" : ""}>
-          ${commit.message.split("\n").map((line) => html`${line}<br />`)}
+          ${this.formatCommitMessage(commit.message)}
         </p>
       </li>
     `;
+  }
+
+  private extractRepoUrl(commitUrl: string): string {
+    // This regex matches everything up to '/commit/' in the URL
+    const match = commitUrl.match(/(.*?\/.*?\/.*?)\/commit\//);
+    return match ? match[1] : "#";
+  }
+
+  private formatCommitMessage(message: string) {
+    return message
+      .split("\n")
+      .map((line) =>
+        line.trim().startsWith("-")
+          ? html`<span class="indented">${line}</span><br />`
+          : html`${line}<br />`,
+      );
   }
 
   private renderStatus() {
@@ -178,18 +210,69 @@ export class CommitList extends LitElement {
       display: block;
       font-family: "Fira Sans", sans-serif;
       margin: 0 auto;
-      // height: 100vh;
-      // overflow-y: auto;
     }
 
     .private-commit {
       filter: blur(2px);
     }
 
+    .indented {
+      padding-left: 0.5em;
+    }
+
     .commit-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+    }
+
+    .starship-style {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      font-family: "Fira Code", monospace;
+      font-size: 1em;
+      font-weight: 500;
+      margin-bottom: 0.5em;
+    }
+
+    .starship-style .user {
+      color: var(--user-color, #ff0066);
+      font-weight: bold;
+    }
+
+    .starship-style .separator {
+      color: var(--separator-color, #9e9e9e);
+      margin: 0 0.5em;
+    }
+
+    .starship-style a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .starship-style a:hover {
+      text-decoration: underline;
+    }
+
+    .starship-style .repo {
+      color: var(--repo-color, #2196f3);
+      display: flex;
+      align-items: center;
+    }
+
+    .starship-style .branch {
+      color: var(--branch-color, #ffc107);
+      display: flex;
+      align-items: center;
+    }
+
+    .starship-style sl-icon {
+      margin-right: 0.3em;
+    }
+
+    .starship-style .timestamp {
+      margin-left: auto;
+      color: var(--timestamp-color, #9e9e9e);
     }
 
     .origin-info {
