@@ -140,7 +140,7 @@ func FetchRecentCommits(since time.Time) ([]models.Commit, error) {
 		since = time.Now().AddDate(0, -1, 0) // Default to 1 month ago
 	}
 
-	query := fmt.Sprintf("author:@me committer-date:>%s", since.Format(time.RFC3339))
+	query := fmt.Sprintf("author:@bnema committer-date:>%s", since.Format(time.RFC3339))
 	opts := &github.SearchOptions{
 		Sort:  "author-date",
 		Order: "desc",
