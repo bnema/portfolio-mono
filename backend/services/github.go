@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"math/rand"
 	"sort"
 	"strings"
@@ -17,12 +17,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type CommitCache struct {
-	commits     []models.Commit
-	lastUpdated time.Time
-	mutex       sync.RWMutex
-}
-
 var (
 	commits []models.Commit
 	mutex   sync.Mutex
@@ -33,34 +27,7 @@ var (
 
 var githubClient *github.Client
 
-func UpdateCommitCache() error {
-	commits, err := GetAllCommitsFromAllRepos()
-	if err != nil {
-		return err
-	}
-
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
-
-	cache.commits = commits
-	cache.lastUpdated = time.Now()
-	return nil
-}
-
-func StartCacheUpdateScheduler() {
-	ticker := time.NewTicker(15 * time.Minute)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				if err := UpdateCommitCache(); err != nil {
-					log.Printf("Error updating commit cache: %v", err)
-				}
-			}
-		}
-	}()
-}
-
+// InitGitHubClient initializes the GitHub client
 func InitGitHubClient(cfg *config.Config) {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -80,36 +47,9 @@ func getRNG() *rand.Rand {
 	})
 	return rng
 }
-func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
-	cache.mutex.RLock()
-	defer cache.mutex.RUnlock()
 
-	if time.Since(cache.lastUpdated) > 15*time.Minute {
-		// Cache is stale, update it asynchronously
-		go func() {
-			if err := UpdateCommitCache(); err != nil {
-				log.Printf("Error updating commit cache: %v", err)
-			}
-		}()
-	}
-
-	totalCount := len(cache.commits)
-	startIndex := (page - 1) * limit
-	endIndex := startIndex + limit
-
-	if startIndex >= totalCount {
-		return []models.Commit{}, totalCount, nil
-	}
-
-	if endIndex > totalCount {
-		endIndex = totalCount
-	}
-
-	return cache.commits[startIndex:endIndex], totalCount, nil
-
-}
-
-func GetAllCommitsFromAllRepos() ([]models.Commit, error) {
+// FetchAllCommitsFromAllRepos fetches all commits from all repositories
+func FetchAllCommitsFromAllRepos() ([]models.Commit, error) {
 	client := GetGitHubClient()
 	if client == nil {
 		return nil, errors.New("GitHub client is not initialized")
@@ -139,8 +79,7 @@ func GetAllCommitsFromAllRepos() ([]models.Commit, error) {
 	for _, repo := range allRepos {
 		commits, err := fetchCommitsFromRepo(ctx, client, repo.GetOwner().GetLogin(), repo.GetName(), repo.GetPrivate())
 		if err != nil {
-			// Log the error but continue with other repos
-			log.Printf("Error fetching commits from %s: %v", repo.GetName(), err)
+			errors.New("Error fetching commits from repo: " + repo.GetName())
 			continue
 		}
 		allCommits = append(allCommits, commits...)
@@ -158,6 +97,7 @@ func GetAllCommitsFromAllRepos() ([]models.Commit, error) {
 	return obfuscatedCommits, nil
 }
 
+// fetchCommitsFromRepo fetches all commits from a given repository
 func fetchCommitsFromRepo(ctx context.Context, client *github.Client, owner, repo string, isPrivate bool) ([]models.Commit, error) {
 	var commits []models.Commit
 	opts := &github.CommitsListOptions{
@@ -187,6 +127,56 @@ func fetchCommitsFromRepo(ctx context.Context, client *github.Client, owner, rep
 	return commits, nil
 }
 
+// FetchRecentCommits fetches all commits authored by the authenticated user since a given date
+func FetchRecentCommits(since time.Time) ([]models.Commit, error) {
+	client := GetGitHubClient()
+	if client == nil {
+		return nil, errors.New("GitHub client is not initialized")
+	}
+	ctx := context.Background()
+
+	// Use a reasonable default date if 'since' is zero
+	if since.IsZero() {
+		since = time.Now().AddDate(0, -1, 0) // Default to 1 month ago
+	}
+
+	query := fmt.Sprintf("author:@me committer-date:>%s", since.Format(time.RFC3339))
+	opts := &github.SearchOptions{
+		Sort:  "author-date",
+		Order: "desc",
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+
+	var allCommits []models.Commit
+	for {
+		result, resp, err := client.Search.Commits(ctx, query, opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, commit := range result.Commits {
+			newCommit := models.Commit{
+				ID:        commit.GetSHA(),
+				RepoName:  commit.GetRepository().GetName(),
+				Message:   commit.GetCommit().GetMessage(),
+				Timestamp: commit.GetCommit().GetAuthor().GetDate().Format(time.RFC3339),
+				URL:       commit.GetHTMLURL(),
+				IsPrivate: commit.GetRepository().GetPrivate(),
+			}
+			allCommits = append(allCommits, newCommit)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return ObfuscatePrivateCommits(allCommits), nil
+}
+
+// ObfuscatePrivateCommits replaces private commit data with obfuscated strings
 func ObfuscatePrivateCommits(commits []models.Commit) []models.Commit {
 	for i, commit := range commits {
 		if commit.IsPrivate {
@@ -199,6 +189,7 @@ func ObfuscatePrivateCommits(commits []models.Commit) []models.Commit {
 	return commits
 }
 
+// obfuscateString replaces all characters in a string with obfuscated characters
 func obfuscateString(s string) string {
 	obfuscatedChars := []rune("░▒▓█▄▀■□▢▣▤▥▦▧▨▩▆▅█▉▇▊▄▋▌_▍▃▂▁")
 	r := getRNG()
