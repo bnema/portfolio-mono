@@ -1,6 +1,6 @@
 package models
 
-type Tweets struct {
+type Tweet struct {
 	ID           string `json:"id"`
 	UserHandle   string `json:"user_handle"`
 	Text         string `json:"text"`
