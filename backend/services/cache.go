@@ -21,7 +21,7 @@ func StartCacheUpdateScheduler() {
 	}
 
 	// Schedule periodic updates
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for {
 			select {

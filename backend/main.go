@@ -19,7 +19,7 @@ func main() {
 	// Initialize GitHub client
 	services.InitGitHubClient(cfg)
 
-	services.UpdateCommitCache() // Initial cache population
+	// Initial cache population and scheduler
 	services.StartCacheUpdateScheduler()
 
 	e := echo.New()

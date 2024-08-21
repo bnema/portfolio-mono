@@ -18,8 +18,6 @@ import (
 )
 
 var (
-	commits []models.Commit
-	mutex   sync.Mutex
 	rng     *rand.Rand
 	rngOnce sync.Once
 	cache   CommitCache
@@ -48,6 +46,33 @@ func getRNG() *rand.Rand {
 	return rng
 }
 
+// GetVersionFromTag returns the current version of the application fril the latest tag in the repository
+func GetVersionFromTag() string {
+	client := GetGitHubClient()
+	if client == nil {
+		return "unknown"
+	}
+
+	ctx := context.Background()
+
+	// Get the latest release
+	release, _, err := client.Repositories.GetLatestRelease(ctx, "bnema", "portfolio-mono")
+	if err != nil {
+		return "unknown"
+	}
+
+	// Extract the version from the release tag name
+	version := release.GetTagName()
+	if version == "" {
+		return "unknown"
+	}
+
+	// Remove 'v' prefix if present
+	version = strings.TrimPrefix(version, "v")
+
+	return version
+}
+
 // FetchAllCommitsFromAllRepos fetches all commits from all repositories
 func FetchAllCommitsFromAllRepos() ([]models.Commit, error) {
 	client := GetGitHubClient()
@@ -60,7 +85,7 @@ func FetchAllCommitsFromAllRepos() ([]models.Commit, error) {
 	var allRepos []*github.Repository
 	opts := &github.RepositoryListByAuthenticatedUserOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
-		Type:        "all", // Include both public and private repositories
+		Type:        "owner", // Include both public and private repositories
 	}
 	for {
 		repos, resp, err := client.Repositories.ListByAuthenticatedUser(ctx, opts)
@@ -140,7 +165,14 @@ func FetchRecentCommits(since time.Time) ([]models.Commit, error) {
 		since = time.Now().AddDate(0, -1, 0) // Default to 1 month ago
 	}
 
-	query := fmt.Sprintf("author:@bnema committer-date:>%s", since.Format(time.RFC3339))
+	// Get the authenticated user's username
+	user, _, err := client.Users.Get(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get authenticated user: %v", err)
+	}
+	username := user.GetLogin()
+
+	query := fmt.Sprintf("author:%s committer-date:>%s", username, since.Format("2006-01-02"))
 	opts := &github.SearchOptions{
 		Sort:  "author-date",
 		Order: "desc",
@@ -153,8 +185,9 @@ func FetchRecentCommits(since time.Time) ([]models.Commit, error) {
 	for {
 		result, resp, err := client.Search.Commits(ctx, query, opts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to search commits: %v", err)
 		}
+
 		for _, commit := range result.Commits {
 			newCommit := models.Commit{
 				ID:        commit.GetSHA(),

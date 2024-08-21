@@ -18,6 +18,10 @@ func healthCheck(c echo.Context) error {
 	return c.String(http.StatusOK, "OK")
 }
 
+func getVersion(c echo.Context) error {
+	return c.JSON(http.StatusOK, services.GetVersionFromTag())
+}
+
 func getCommits(c echo.Context) error {
 	// Get page and limit from query parameters
 	page, _ := strconv.Atoi(c.QueryParam("page"))
