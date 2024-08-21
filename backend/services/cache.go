@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"log"
 	"portfolio-mono/models"
 	"sync"
@@ -43,7 +42,7 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 		// Cache is stale, update it asynchronously
 		go func() {
 			if err := UpdateCommitCache(); err != nil {
-				errors.New("Error updating commit cache")
+				log.Println("Error updating commit cache:", err)
 			}
 		}()
 	}
@@ -86,7 +85,7 @@ func UpdateCommitCache() error {
 	}
 
 	if err != nil {
-		errors.New("Error fetching commits")
+		log.Println("Error fetching commits:", err)
 		return err
 	}
 
