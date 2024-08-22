@@ -11,7 +11,8 @@ export class CommitList extends LitElement {
   @state() private error: string | null = null;
   @state() private page = 1;
   @state() private hasMore = true;
-  @state() private newCommits: Commit[] = [];
+  @state() private newestCommitId: string | null = null;
+  @state() private abortController: AbortController | null = null;
 
   private commitService: CommitService;
   private limit = 10;
@@ -24,7 +25,7 @@ export class CommitList extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.refreshCommits();
+    this.fetchInitialCommits();
     this.setupInfiniteScroll();
     this.setupRefreshInterval();
   }
@@ -33,43 +34,23 @@ export class CommitList extends LitElement {
     super.disconnectedCallback();
     this.teardownInfiniteScroll();
     this.clearRefreshInterval();
-  }
-
-  private async fetchCommits() {
-    if (this.loading || !this.hasMore) return;
-
-    this.loading = true;
-    try {
-      const data = await this.commitService.fetchCommits(this.page, this.limit);
-      const newCommits = data.commits.map((commit) => ({
-        ...commit,
-        isNew: true,
-      }));
-      this.commits = [...this.commits, ...newCommits];
-      this.hasMore = this.commits.length < data.total_count;
-      this.page++;
-
-      // Schedule removal of 'isNew' flag
-      setTimeout(() => {
-        this.commits = this.commits.map((commit) => ({
-          ...commit,
-          isNew: false,
-        }));
-      }, 500);
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : "An unknown error occurred";
-    } finally {
-      this.loading = false;
+    if (this.abortController) {
+      this.abortController.abort();
     }
   }
 
-  private async refreshCommits() {
-    if (this.loading) return;
+  private async fetchInitialCommits() {
     this.loading = true;
     try {
-      const data = await this.commitService.fetchCommits(1, this.limit);
-      this.newCommits = data.commits;
-      this.updateCommits();
+      const data = await this.commitService.fetchCommits(
+        1,
+        this.limit,
+        new AbortController().signal,
+      );
+      this.commits = data.commits;
+      if (this.commits.length > 0) {
+        this.newestCommitId = this.commits[0].id;
+      }
       this.hasMore = this.commits.length < data.total_count;
       this.page = 2;
     } catch (e) {
@@ -79,19 +60,91 @@ export class CommitList extends LitElement {
     }
   }
 
-  private updateCommits() {
-    const updatedCommits = [...this.newCommits];
-    let changed = false;
+  private async fetchCommits() {
+    if (this.loading || !this.hasMore) return;
 
-    for (const commit of this.commits) {
-      if (!this.newCommits.some((newCommit) => newCommit.id === commit.id)) {
-        updatedCommits.push(commit);
-        changed = true;
+    this.loading = true;
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    this.abortController = new AbortController();
+
+    try {
+      const data = await this.commitService.fetchCommits(
+        this.page,
+        this.limit,
+        this.abortController.signal,
+      );
+      const newCommits = data.commits.map((commit) => ({
+        ...commit,
+        isNew: false,
+      }));
+      this.commits = [...this.commits, ...newCommits];
+      this.hasMore = this.commits.length < data.total_count;
+      this.page++;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== "AbortError") {
+        this.error =
+          e instanceof Error ? e.message : "An unknown error occurred";
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  private async refreshCommits() {
+    if (this.loading) return;
+
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    this.abortController = new AbortController();
+    this.loading = true;
+
+    try {
+      const data = await this.commitService.fetchCommits(
+        1,
+        this.limit,
+        this.abortController.signal,
+      );
+      this.updateCommits(data.commits);
+      this.hasMore = this.commits.length < data.total_count;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== "AbortError") {
+        this.error =
+          e instanceof Error ? e.message : "An unknown error occurred";
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  private updateCommits(newCommits: Commit[]) {
+    if (newCommits.length === 0) return;
+
+    const updatedCommits = [...this.commits];
+    let newCommitsAdded = 0;
+
+    for (const commit of newCommits) {
+      if (!this.newestCommitId || commit.id !== this.newestCommitId) {
+        updatedCommits.unshift({ ...commit, isNew: true });
+        newCommitsAdded++;
+      } else {
+        break;
       }
     }
 
-    if (changed || updatedCommits.length !== this.commits.length) {
+    if (newCommitsAdded > 0) {
       this.commits = updatedCommits;
+      this.newestCommitId = this.commits[0].id;
+
+      setTimeout(() => {
+        this.commits = this.commits.map((commit, index) => ({
+          ...commit,
+          isNew: index < newCommitsAdded ? false : commit.isNew,
+        }));
+      }, 500);
     }
   }
 
@@ -148,11 +201,17 @@ export class CommitList extends LitElement {
         <div class="commit-header starship-style">
           <span class="user">brice</span>
           <span class="separator">in</span>
+          ${commit.is_private
+            ? html`<sl-icon
+                name="lock-fill"
+                title="Private repository"
+              ></sl-icon>`
+            : ""}
           <a
             href=${repoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="repo"
+            class="repo ${commit.is_private ? "private-blur" : ""}"
           >
             <sl-icon name="github"></sl-icon>
             ${commit.repo_name}
@@ -171,7 +230,7 @@ export class CommitList extends LitElement {
             >${this.formatTimestamp(commit.timestamp)}</span
           >
         </div>
-        <p class=${commit.is_private ? "private-commit" : ""}>
+        <p class="${commit.is_private ? "private-blur" : ""}">
           ${this.formatCommitMessage(commit.message)}
         </p>
       </li>
@@ -179,7 +238,6 @@ export class CommitList extends LitElement {
   }
 
   private extractRepoUrl(commitUrl: string): string {
-    // This regex matches everything up to '/commit/' in the URL
     const match = commitUrl.match(/(.*?\/.*?\/.*?)\/commit\//);
     return match ? match[1] : "#";
   }
@@ -212,8 +270,13 @@ export class CommitList extends LitElement {
       margin: 0 auto;
     }
 
-    .private-commit {
+    .private-blur {
       filter: blur(2px);
+    }
+
+    .commit-header sl-icon[name="lock"] {
+      margin-right: 0.5em;
+      color: var(--muted-color);
     }
 
     .indented {
