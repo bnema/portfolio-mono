@@ -20,7 +20,7 @@ func StartCacheUpdateScheduler() {
 	}
 
 	// Schedule periodic updates
-	ticker := time.NewTicker(10 * time.Minute)
+	ticker := time.NewTicker(5 * time.Minute)
 	go func() {
 		for {
 			select {
@@ -38,7 +38,7 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
 
-	if time.Since(cache.lastUpdated) > 10*time.Minute {
+	if time.Since(cache.lastUpdated) > 5*time.Minute {
 		// Cache is stale, update it asynchronously
 		go func() {
 			if err := UpdateCommitCache(); err != nil {
