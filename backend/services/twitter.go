@@ -1,8 +1,8 @@
 package services
 
 // import (
-// 	"portfolio-mono/config"
-// 	"portfolio-mono/models"
+// 	"portfolio-backend/config"
+// 	"portfolio-backend/models"
 
 // 	"github.com/g8rswimmer/go-twitter/v2"
 // )

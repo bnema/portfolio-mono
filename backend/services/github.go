@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"portfolio-mono/config"
-	"portfolio-mono/models"
+	"portfolio-backend/config"
+	"portfolio-backend/models"
 
 	"github.com/google/go-github/v63/github"
 	"golang.org/x/oauth2"
@@ -56,19 +56,17 @@ func GetVersionFromTag() string {
 	ctx := context.Background()
 
 	// Get the latest release
-	release, _, err := client.Repositories.GetLatestRelease(ctx, "bnema", "portfolio-mono")
+	release, _, err := client.Repositories.GetLatestRelease(ctx, "bnema", "portfolio-monorepo")
 	if err != nil {
-		return "unknown"
+		// return the error from the GitHub API
+		return fmt.Sprintf("error: %s", err)
 	}
 
 	// Extract the version from the release tag name
 	version := release.GetTagName()
 	if version == "" {
-		return "unknown"
+		return "v0.0"
 	}
-
-	// Remove 'v' prefix if present
-	version = strings.TrimPrefix(version, "v")
 
 	return version
 }

@@ -2,7 +2,7 @@ package services
 
 import (
 	"log"
-	"portfolio-mono/models"
+	"portfolio-backend/models"
 	"sync"
 	"time"
 )
