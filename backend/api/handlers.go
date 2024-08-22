@@ -2,7 +2,7 @@ package api
 
 import (
 	"net/http"
-	"portfolio-mono/services"
+	"portfolio-backend/services"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -12,6 +12,7 @@ func SetupRoutes(e *echo.Echo) {
 	e.GET("/health", healthCheck)
 	api := e.Group("/api")
 	api.GET("/commits", getCommits)
+	api.GET("/version", getVersion)
 }
 
 func healthCheck(c echo.Context) error {

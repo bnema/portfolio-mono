@@ -1,9 +1,15 @@
 package main
 
 import (
-	"portfolio-mono/api"
-	"portfolio-mono/config"
-	"portfolio-mono/services"
+	"context"
+	"os"
+	"os/signal"
+	"portfolio-backend/api"
+	"portfolio-backend/config"
+	"portfolio-backend/services"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/labstack/echo/v4"
@@ -19,8 +25,15 @@ func main() {
 	// Initialize GitHub client
 	services.InitGitHubClient(cfg)
 
-	// Initial cache population and scheduler
-	services.StartCacheUpdateScheduler()
+	// Create a WaitGroup to manage background tasks
+	var wg sync.WaitGroup
+
+	// Start cache update scheduler in the background
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		services.StartCacheUpdateScheduler()
+	}()
 
 	e := echo.New()
 	e.HideBanner = true
@@ -40,6 +53,25 @@ func main() {
 	// Setup routes
 	api.SetupRoutes(e)
 
-	// Start server
-	e.Logger.Fatal(e.Start(cfg.Port))
+	// Start server in a goroutine
+	go func() {
+		if err := e.Start(cfg.Port); err != nil {
+			e.Logger.Info("Shutting down the server")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	// Shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
+
+	// Wait for background tasks to complete
+	wg.Wait()
 }

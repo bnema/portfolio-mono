@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"portfolio-mono/models"
+	"portfolio-backend/models"
 
 	"github.com/google/go-github/v63/github"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
