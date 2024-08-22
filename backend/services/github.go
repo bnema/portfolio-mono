@@ -152,27 +152,22 @@ func fetchCommitsFromRepo(ctx context.Context, client *github.Client, owner, rep
 	return commits, nil
 }
 
-// FetchRecentCommits fetches all commits authored by the authenticated user since a given date
-func FetchRecentCommits(since time.Time) ([]models.Commit, error) {
+// FetchRecentCommits fetches all commits authored by the authenticated user since the last update
+func FetchRecentCommits(lastUpdated time.Time) ([]models.Commit, error) {
 	client := GetGitHubClient()
 	if client == nil {
-		return nil, errors.New("GitHub client is not initialized")
+		return nil, fmt.Errorf("GitHub client is not initialized")
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	// Use a reasonable default date if 'since' is zero
-	if since.IsZero() {
-		since = time.Now().AddDate(0, -1, 0) // Default to 1 month ago
-	}
-
-	// Get the authenticated user's username
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get authenticated user: %v", err)
+		return nil, fmt.Errorf("failed to get authenticated user: %w", err)
 	}
 	username := user.GetLogin()
 
-	query := fmt.Sprintf("author:%s committer-date:>%s", username, since.Format("2006-01-02"))
+	query := fmt.Sprintf("author:%s", username)
 	opts := &github.SearchOptions{
 		Sort:  "author-date",
 		Order: "desc",
@@ -185,15 +180,24 @@ func FetchRecentCommits(since time.Time) ([]models.Commit, error) {
 	for {
 		result, resp, err := client.Search.Commits(ctx, query, opts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to search commits: %v", err)
+			return nil, fmt.Errorf("failed to search commits: %w", err)
 		}
 
 		for _, commit := range result.Commits {
+			commitDate := commit.GetCommit().GetAuthor().GetDate()
+
+			commitTimeStamp := commitDate.Time // Convert GitHub timestamp to time.Time
+
+			if commitTimeStamp.Before(lastUpdated) || commitTimeStamp.Equal(lastUpdated) {
+				// We've reached commits older than or equal to the last update, so we're done
+				return allCommits, nil
+			}
+
 			newCommit := models.Commit{
 				ID:        commit.GetSHA(),
 				RepoName:  commit.GetRepository().GetName(),
 				Message:   commit.GetCommit().GetMessage(),
-				Timestamp: commit.GetCommit().GetAuthor().GetDate().Format(time.RFC3339),
+				Timestamp: commitDate.Format(time.RFC3339),
 				URL:       commit.GetHTMLURL(),
 				IsPrivate: commit.GetRepository().GetPrivate(),
 			}

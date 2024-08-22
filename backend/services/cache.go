@@ -67,7 +67,7 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 func UpdateCommitCache() error {
 	log.Println("Updating commit cache...")
 	cache.mutex.RLock()
-	lastUpdate := cache.lastUpdated
+	lastUpdated := cache.lastUpdated
 	isEmpty := len(cache.commits) == 0
 	cache.mutex.RUnlock()
 
@@ -80,8 +80,8 @@ func UpdateCommitCache() error {
 		recentCommits, err = FetchAllCommitsFromAllRepos()
 	} else {
 		// Otherwise, just get recent commits
-		log.Printf("Fetching commits since %s...\n", lastUpdate.Format(time.RFC3339))
-		recentCommits, err = FetchRecentCommits(lastUpdate)
+		log.Printf("Fetching commits since %s...\n", lastUpdated.Format(time.RFC3339))
+		recentCommits, err = FetchRecentCommits(lastUpdated)
 	}
 
 	if err != nil {
