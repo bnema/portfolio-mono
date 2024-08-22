@@ -166,7 +166,7 @@ func FetchRecentCommits(lastUpdated time.Time) ([]models.Commit, error) {
 		return nil, fmt.Errorf("failed to get authenticated user: %w", err)
 	}
 	username := user.GetLogin()
-
+	fmt.Println("username", username)
 	query := fmt.Sprintf("author:%s", username)
 	opts := &github.SearchOptions{
 		Sort:  "author-date",
