@@ -17,8 +17,10 @@
     --subheading-color: #444;
     --muted-color: #777;
     --border-color: rgba(0, 0, 0, 0.1);
-    --link-color: #ff0066;
+    --link-color: rgba(0, 0, 0, 0.5);
     --title-color: #000;
+    --repo-color: #000;
+    --user-color: #000;
 
     transition:
         background-color 0.3s ease,
@@ -38,8 +40,10 @@
     --subheading-color: #f0f0f0;
     --muted-color: #b0b0b0;
     --border-color: rgba(255, 255, 255, 0.1);
-    --link-color: #ff0066;
+    --link-color: rgba(255, 255, 255, 0.5);
     --title-color: #cee3e5;
+    --repo-color: #fff;
+    --user-color: #fff;
 }
 
 * {

@@ -194,8 +194,6 @@ export class CommitList extends LitElement {
   }
 
   private renderCommit(commit: Commit) {
-    const repoUrl = this.extractRepoUrl(commit.url);
-
     return html`
       <li class="${commit.isNew ? "new-commit" : ""}">
         <div class="commit-header starship-style">
@@ -208,23 +206,13 @@ export class CommitList extends LitElement {
               ></sl-icon>`
             : ""}
           <a
-            href=${repoUrl}
+            href=${commit.url}
             target="_blank"
             rel="noopener noreferrer"
             class="repo ${commit.is_private ? "private-blur" : ""}"
           >
             <sl-icon name="github"></sl-icon>
             ${commit.repo_name}
-          </a>
-          <span class="separator">on</span>
-          <a
-            href=${commit.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="branch"
-          >
-            <sl-icon name="git"></sl-icon>
-            main
           </a>
           <span class="timestamp"
             >${this.formatTimestamp(commit.timestamp)}</span
@@ -235,11 +223,6 @@ export class CommitList extends LitElement {
         </p>
       </li>
     `;
-  }
-
-  private extractRepoUrl(commitUrl: string): string {
-    const match = commitUrl.match(/(.*?\/.*?\/.*?)\/commit\//);
-    return match ? match[1] : "#";
   }
 
   private formatCommitMessage(message: string) {
@@ -318,24 +301,17 @@ export class CommitList extends LitElement {
     }
 
     .starship-style .repo {
-      color: var(--repo-color, #2196f3);
+      color: var(--repo-color);
       display: flex;
       align-items: center;
     }
-
-    .starship-style .branch {
-      color: var(--branch-color, #ffc107);
-      display: flex;
-      align-items: center;
-    }
-
     .starship-style sl-icon {
       margin-right: 0.3em;
     }
 
     .starship-style .timestamp {
       margin-left: auto;
-      color: var(--timestamp-color, #9e9e9e);
+      color: var(--muted-color);
     }
 
     .origin-info {
