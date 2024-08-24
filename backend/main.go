@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"portfolio-backend/api"
@@ -17,6 +18,7 @@ import (
 )
 
 func main() {
+	// Load and validate configuration
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("Error loading configuration", "error", err)
@@ -37,6 +39,7 @@ func main() {
 
 	e := echo.New()
 	e.HideBanner = true
+	e.HidePort = true
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -53,25 +56,39 @@ func main() {
 	// Setup routes
 	api.SetupRoutes(e)
 
+	// Create a context that will be cancelled on interrupt
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serverClosed := make(chan struct{})
+
 	// Start server in a goroutine
 	go func() {
-		if err := e.Start(cfg.Port); err != nil {
-			e.Logger.Info("Shutting down the server")
+		port := cfg.Port
+		fullAddr := "http://localhost" + port
+		log.Warn("Starting http server at " + fullAddr)
+		if err := e.Start(port); err != nil {
+			if err == http.ErrServerClosed {
+				log.Info("Server closed")
+			} else {
+				log.Error("Error starting server" + err.Error())
+			}
 		}
+		close(serverClosed)
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
+	// Wait for interrupt signal
+	<-ctx.Done()
+	log.Warn("Received interrupt, shutting down gracefully")
 
-	// Shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// Shutdown with timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := e.Shutdown(ctx); err != nil {
-		e.Logger.Fatal(err)
+	if err := e.Shutdown(shutdownCtx); err != nil {
+		log.Error("Error during server shutdown" + err.Error())
 	}
 
 	// Wait for background tasks to complete
 	wg.Wait()
+	log.Info("Server shutdown complete")
 }

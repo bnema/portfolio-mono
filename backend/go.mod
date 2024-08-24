@@ -7,15 +7,13 @@ require (
 	github.com/google/go-github/v63 v63.0.0
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.12.0
+	github.com/migueleliasweb/go-github-mock v1.0.0
 	golang.org/x/oauth2 v0.22.0
 )
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/charmbracelet/lipgloss v0.10.0 // indirect
-	github.com/g8rswimmer/go-twitter/v2 v2.1.5 // indirect
-	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/google/go-github/v61 v61.0.0 // indirect
@@ -26,7 +24,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/migueleliasweb/go-github-mock v1.0.0 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect

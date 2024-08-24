@@ -33,6 +33,14 @@ func TestFetchRecentCommits(t *testing.T) {
 	// Create mocked HTTP client
 	mockedHTTPClient := mock.NewMockedHTTPClient(
 		mock.WithRequestMatch(
+			mock.GetUsersByUsername,
+			github.User{Login: github.String("testuser")},
+		),
+		mock.WithRequestMatch(
+			mock.GetUser,
+			github.User{Login: github.String("testuser")},
+		),
+		mock.WithRequestMatch(
 			mock.GetSearchCommits,
 			&github.CommitsSearchResult{
 				Commits: mockCommits,

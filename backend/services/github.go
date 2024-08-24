@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/rand"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -20,7 +22,6 @@ import (
 var (
 	rng     *rand.Rand
 	rngOnce sync.Once
-	cache   CommitCache
 )
 
 var githubClient *github.Client
@@ -164,7 +165,7 @@ func FetchRecentCommits(lastUpdated time.Time) ([]models.Commit, error) {
 		return nil, fmt.Errorf("failed to get authenticated user: %w", err)
 	}
 	username := user.GetLogin()
-	fmt.Println("username", username)
+
 	query := fmt.Sprintf("author:%s", username)
 	opts := &github.SearchOptions{
 		Sort:  "author-date",
@@ -209,6 +210,54 @@ func FetchRecentCommits(lastUpdated time.Time) ([]models.Commit, error) {
 	}
 
 	return ObfuscatePrivateCommits(allCommits), nil
+}
+
+// FetchProjectsContent fetches all project content from the GitHub repository
+func FetchProjectsContent() ([]models.Project, error) {
+	client := GetGitHubClient()
+	if client == nil {
+		return nil, errors.New("GitHub client is not initialized")
+	}
+	ctx := context.Background()
+
+	owner := "bnema"
+	repo := "portfolio-mono"
+	path := "content/projects"
+
+	var projects []models.Project
+
+	opts := &github.RepositoryContentGetOptions{}
+	_, directoryContents, _, err := client.Repositories.GetContents(ctx, owner, repo, path, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch directory contents: %w", err)
+	}
+
+	for _, file := range directoryContents {
+		if filepath.Ext(file.GetName()) != ".md" {
+			continue
+		}
+
+		fileContent, _, _, err := client.Repositories.GetContents(ctx, owner, repo, file.GetPath(), opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch file content for %s: %w", file.GetName(), err)
+		}
+
+		content, err := base64.StdEncoding.DecodeString(*fileContent.Content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode content for %s: %w", file.GetName(), err)
+		}
+
+		title := strings.TrimSuffix(file.GetName(), filepath.Ext(file.GetName()))
+		slug := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
+
+		projects = append(projects, models.Project{
+			Title:   title,
+			Slug:    slug,
+			Content: string(content), // Raw markdown content
+		})
+	}
+
+	return projects, nil
 }
 
 // ObfuscatePrivateCommits replaces private commit data with obfuscated strings

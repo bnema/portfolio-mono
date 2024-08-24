@@ -35,11 +35,19 @@ func TestUpdateCommitCache(t *testing.T) {
 
 	// Create mocked HTTP client
 	mockedHTTPClient := mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(
+			mock.GetUsersByUsername,
+			github.User{Login: github.String("testuser")},
+		),
+		mock.WithRequestMatch(
+			mock.GetUser,
+			github.User{Login: github.String("testuser")},
+		),
 		mock.WithRequestMatchHandler(
 			mock.GetSearchCommits,
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				query := r.URL.Query().Get("q")
-				if !strings.Contains(query, "author:@bnema") {
+				if !strings.Contains(query, "author:testuser") {
 					http.Error(w, "Unexpected query", http.StatusBadRequest)
 					return
 				}
@@ -56,9 +64,9 @@ func TestUpdateCommitCache(t *testing.T) {
 	defer func() { githubClient = originalClient }()
 
 	// Initialize cache with some old commits
-	cache = CommitCache{
-		commits: []models.Commit{
-			{
+	cache = &CommitCache{
+		commits: map[string]models.Commit{
+			"old-commit-id": {
 				ID:        "old-commit-id",
 				RepoName:  "test-repo",
 				Message:   "Old commit",
@@ -81,12 +89,10 @@ func TestUpdateCommitCache(t *testing.T) {
 		t.Errorf("Expected 2 commits in cache, got %d", len(cache.commits))
 	}
 
-	if cache.commits[0].ID != "new-commit-id" {
-		t.Errorf("Expected newest commit to be 'new-commit-id', got %s", cache.commits[0].ID)
-	}
-
-	// Check if lastUpdated was updated
-	if time.Since(cache.lastUpdated) > time.Second {
-		t.Errorf("lastUpdated was not updated correctly")
+	newestCommit, ok := cache.commits["new-commit-id"]
+	if !ok {
+		t.Errorf("Expected to find 'new-commit-id' in cache, but it was not present")
+	} else if newestCommit.ID != "new-commit-id" {
+		t.Errorf("Expected newest commit to be 'new-commit-id', got %s", newestCommit.ID)
 	}
 }

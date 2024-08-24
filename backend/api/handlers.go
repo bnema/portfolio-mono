@@ -13,6 +13,7 @@ func SetupRoutes(e *echo.Echo) {
 	api := e.Group("/api")
 	api.GET("/commits", getCommits)
 	api.GET("/version", getVersion)
+	api.GET("/projects", getProjects)
 }
 
 func healthCheck(c echo.Context) error {
@@ -49,4 +50,13 @@ func getCommits(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+func getProjects(c echo.Context) error {
+	projects, err := services.FetchProjectsContent()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, projects)
 }

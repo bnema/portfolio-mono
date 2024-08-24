@@ -1,53 +1,61 @@
 package services
 
 import (
-	"log"
 	"portfolio-backend/models"
+	"sort"
 	"sync"
 	"time"
+
+	"github.com/charmbracelet/log"
 )
 
 type CommitCache struct {
-	commits     []models.Commit
+	commits     map[string]models.Commit
 	lastUpdated time.Time
 	mutex       sync.RWMutex
+}
+
+var cache = &CommitCache{
+	commits: make(map[string]models.Commit),
 }
 
 func StartCacheUpdateScheduler() {
 	// Initial load of all commits
 	if err := UpdateCommitCache(); err != nil {
-		log.Printf("Error initializing commit cache: %v", err)
+		log.Error("Error initializing commit cache:" + err.Error())
 	}
 
 	// Schedule periodic updates
-	ticker := time.NewTicker(5 * time.Minute)
 	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				if err := UpdateCommitCache(); err != nil {
-					log.Printf("Error updating commit cache: %v", err)
-				}
+		ticker := time.NewTicker(15 * time.Minute)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if err := UpdateCommitCache(); err != nil {
+				log.Error("Error updating commit cache:" + err.Error())
 			}
 		}
 	}()
 }
 
-// GetAllCommitsFromCache returns a paginated list of commits from the cache
 func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
 
-	if time.Since(cache.lastUpdated) > 5*time.Minute {
-		// Cache is stale, update it asynchronously
-		go func() {
-			if err := UpdateCommitCache(); err != nil {
-				log.Println("Error updating commit cache:", err)
-			}
-		}()
+	// Convert map to slice for pagination
+	commits := make([]models.Commit, 0, len(cache.commits))
+	for _, commit := range cache.commits {
+		commits = append(commits, commit)
 	}
 
-	totalCount := len(cache.commits)
+	// Sort commits by timestamp (newest first)
+	sort.Slice(commits, func(i, j int) bool {
+		timeI, _ := time.Parse(time.RFC3339, commits[i].Timestamp)
+		timeJ, _ := time.Parse(time.RFC3339, commits[j].Timestamp)
+		return timeI.After(timeJ)
+	})
+
+	totalCount := len(commits)
 	startIndex := (page - 1) * limit
 	endIndex := startIndex + limit
 
@@ -59,48 +67,28 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 		endIndex = totalCount
 	}
 
-	return cache.commits[startIndex:endIndex], totalCount, nil
-
+	return commits[startIndex:endIndex], totalCount, nil
 }
 
-// UpdateCommitCache fetches recent commits and updates the cache
 func UpdateCommitCache() error {
-	log.Println("Updating commit cache...")
-	cache.mutex.RLock()
-	lastUpdated := cache.lastUpdated
-	isEmpty := len(cache.commits) == 0
-	cache.mutex.RUnlock()
+	log.Info("Updating commit cache...")
 
-	var recentCommits []models.Commit
-	var err error
-
-	if isEmpty {
-		// If cache is empty, fetch all commits
-		log.Println("Cache is empty, fetching all commits...")
-		recentCommits, err = FetchAllCommitsFromAllRepos()
-	} else {
-		// Otherwise, just get recent commits
-		log.Printf("Fetching commits since %s...\n", lastUpdated.Format(time.RFC3339))
-		recentCommits, err = FetchRecentCommits(lastUpdated)
-	}
-
+	recentCommits, err := FetchRecentCommits(cache.lastUpdated)
 	if err != nil {
-		log.Println("Error fetching commits:", err)
+		log.Error("Error fetching commits" + err.Error())
 		return err
 	}
 
-	log.Printf("Fetched %d commits\n", len(recentCommits))
+	log.Info("Fetching commits...")
 
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
-	if isEmpty {
-		cache.commits = recentCommits
-	} else {
-		cache.commits = append(recentCommits, cache.commits...)
+	for _, commit := range recentCommits {
+		cache.commits[commit.ID] = commit
 	}
 
 	cache.lastUpdated = time.Now()
-	log.Printf("Cache update completed. Total commits: %d\n", len(cache.commits))
+	log.Info("Cache update completed.")
 	return nil
 }
