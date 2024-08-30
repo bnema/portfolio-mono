@@ -70,7 +70,10 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 		return timeI.After(timeJ)
 	})
 
-	totalCount := len(commits)
+	// Apply obfuscation to private commits
+	obfuscatedCommits := ObfuscatePrivateCommits(commits)
+
+	totalCount := len(obfuscatedCommits)
 	startIndex := (page - 1) * limit
 	endIndex := startIndex + limit
 
@@ -82,7 +85,7 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 		endIndex = totalCount
 	}
 
-	return commits[startIndex:endIndex], totalCount, nil
+	return obfuscatedCommits[startIndex:endIndex], totalCount, nil
 }
 
 func UpdateCommitCache() error {
