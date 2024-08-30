@@ -66,7 +66,7 @@ func main() {
 	go func() {
 		port := cfg.Port
 		fullAddr := "http://localhost" + port
-		log.Warn("Starting http server at " + fullAddr)
+		log.Info("Starting server", "address", fullAddr)
 		if err := e.Start(port); err != nil {
 			if err == http.ErrServerClosed {
 				log.Info("Server closed")

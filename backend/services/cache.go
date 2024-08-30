@@ -1,9 +1,11 @@
 package services
 
 import (
+	"fmt"
 	"portfolio-backend/models"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -11,33 +13,46 @@ import (
 
 type CommitCache struct {
 	commits     map[string]models.Commit
-	lastUpdated time.Time
+	lastUpdated atomic.Value
 	mutex       sync.RWMutex
 }
 
-var cache = &CommitCache{
-	commits: make(map[string]models.Commit),
-}
+var cache *CommitCache
 
-func StartCacheUpdateScheduler() {
-	// Initial load of all commits
-	if err := UpdateCommitCache(); err != nil {
-		log.Error("Error initializing commit cache:" + err.Error())
+func init() {
+	cache = &CommitCache{
+		commits: make(map[string]models.Commit),
 	}
-
-	// Schedule periodic updates
-	go func() {
-		ticker := time.NewTicker(15 * time.Minute)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			if err := UpdateCommitCache(); err != nil {
-				log.Error("Error updating commit cache:" + err.Error())
-			}
-		}
-	}()
+	cache.lastUpdated.Store(time.Now().UTC())
 }
 
+func (c *CommitCache) Update(newCommits []models.Commit) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	for _, commit := range newCommits {
+		c.commits[commit.ID] = commit
+	}
+	c.lastUpdated.Store(time.Now().UTC())
+}
+
+func (c *CommitCache) GetLastUpdated() time.Time {
+	if lastUpdateValue := c.lastUpdated.Load(); lastUpdateValue != nil {
+		return lastUpdateValue.(time.Time)
+	}
+	return time.Time{} // Return zero time if not set
+}
+
+func (c *CommitCache) GetAllCommits() []models.Commit {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	commits := make([]models.Commit, 0, len(c.commits))
+	for _, commit := range c.commits {
+		commits = append(commits, commit)
+	}
+	return commits
+}
 func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
@@ -73,22 +88,54 @@ func GetAllCommitsFromCache(page, limit int) ([]models.Commit, int, error) {
 func UpdateCommitCache() error {
 	log.Info("Updating commit cache...")
 
-	recentCommits, err := FetchRecentCommits(cache.lastUpdated)
+	var lastUpdate time.Time
+	if lastUpdateValue := cache.lastUpdated.Load(); lastUpdateValue != nil {
+		lastUpdate = lastUpdateValue.(time.Time)
+	}
+
+	var recentCommits []models.Commit
+	var err error
+
+	if len(cache.commits) == 0 {
+		// Cache is empty, fetch all commits
+		recentCommits, err = FetchAllCommitsFromAllRepos()
+	} else {
+		// Cache has data, fetch only recent commits
+		recentCommits, err = FetchRecentCommits(lastUpdate)
+	}
+
 	if err != nil {
-		log.Error("Error fetching commits" + err.Error())
+		log.Error("Error fetching commits", "error", err)
 		return err
 	}
 
-	log.Info("Fetching commits...")
-
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
-
-	for _, commit := range recentCommits {
-		cache.commits[commit.ID] = commit
+	if len(recentCommits) == 0 {
+		log.Info("No new commits to add to cache")
+		return nil
 	}
 
-	cache.lastUpdated = time.Now()
-	log.Info("Cache update completed.")
+	cache.Update(recentCommits)
+	log.Info("Cache update completed", "new_commits", len(recentCommits))
 	return nil
+}
+
+func StartCacheUpdateScheduler() {
+	// Debug
+	fmt.Println("Starting cache update scheduler...")
+	// Initial load of all commits
+	if err := UpdateCommitCache(); err != nil {
+		log.Error("Error initializing commit cache", "error", err)
+	}
+
+	// Schedule periodic updates
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if err := UpdateCommitCache(); err != nil {
+				log.Error("Error updating commit cache", "error", err)
+			}
+		}
+	}()
 }

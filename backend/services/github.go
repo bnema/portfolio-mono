@@ -15,6 +15,7 @@ import (
 	"portfolio-backend/config"
 	"portfolio-backend/models"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/go-github/v63/github"
 	"golang.org/x/oauth2"
 )
@@ -103,7 +104,7 @@ func FetchAllCommitsFromAllRepos() ([]models.Commit, error) {
 	for _, repo := range allRepos {
 		commits, err := fetchCommitsFromRepo(ctx, client, repo.GetOwner().GetLogin(), repo.GetName(), repo.GetPrivate())
 		if err != nil {
-			errors.New("Error fetching commits from repo: " + repo.GetName())
+			log.Warn(fmt.Sprintf("failed to fetch commits from repository: %s", err))
 			continue
 		}
 		allCommits = append(allCommits, commits...)
@@ -157,7 +158,9 @@ func FetchRecentCommits(lastUpdated time.Time) ([]models.Commit, error) {
 	if client == nil {
 		return nil, fmt.Errorf("GitHub client is not initialized")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+	// Increase timeout to 2 minutes for larger repositories
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	user, _, err := client.Users.Get(ctx, "")
@@ -176,18 +179,29 @@ func FetchRecentCommits(lastUpdated time.Time) ([]models.Commit, error) {
 	}
 
 	var allCommits []models.Commit
-	for {
+
+	// Convert lastUpdated to UTC for consistent comparison
+	lastUpdatedUTC := lastUpdated.UTC()
+
+	// Implement exponential backoff
+	backoff := time.Second
+	for i := 0; i < 3; i++ { // Try up to 3 times
 		result, resp, err := client.Search.Commits(ctx, query, opts)
 		if err != nil {
+			// Check if the error is due to rate limiting
+			if _, ok := err.(*github.RateLimitError); ok {
+				time.Sleep(backoff)
+				backoff *= 2
+				continue
+			}
 			return nil, fmt.Errorf("failed to search commits: %w", err)
 		}
 
 		for _, commit := range result.Commits {
 			commitDate := commit.GetCommit().GetAuthor().GetDate()
+			commitTimeStamp := commitDate.Time
 
-			commitTimeStamp := commitDate.Time // Convert GitHub timestamp to time.Time
-
-			if commitTimeStamp.Before(lastUpdated) || commitTimeStamp.Equal(lastUpdated) {
+			if commitTimeStamp.Before(lastUpdatedUTC) || commitTimeStamp.Equal(lastUpdatedUTC) {
 				// We've reached commits older than or equal to the last update, so we're done
 				return allCommits, nil
 			}
@@ -247,13 +261,22 @@ func FetchProjectsContent() ([]models.Project, error) {
 			return nil, fmt.Errorf("failed to decode content for %s: %w", file.GetName(), err)
 		}
 
+		contentStr := string(content)
+		projectOrigin := ""
+		lines := strings.Split(contentStr, "\n")
+		if len(lines) > 0 && strings.HasPrefix(lines[0], "[project_origin]:") {
+			projectOrigin = strings.TrimSpace(strings.TrimPrefix(lines[0], "[project_origin]:"))
+			contentStr = strings.Join(lines[1:], "\n")
+		}
+
 		title := strings.TrimSuffix(file.GetName(), filepath.Ext(file.GetName()))
 		slug := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
 
 		projects = append(projects, models.Project{
-			Title:   title,
-			Slug:    slug,
-			Content: string(content), // Raw markdown content
+			Title:         title,
+			Slug:          slug,
+			ProjectOrigin: projectOrigin,
+			Content:       contentStr,
 		})
 	}
 

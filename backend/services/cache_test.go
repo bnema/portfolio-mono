@@ -75,8 +75,10 @@ func TestUpdateCommitCache(t *testing.T) {
 				IsPrivate: false,
 			},
 		},
-		lastUpdated: now.Add(-30 * time.Minute),
 	}
+
+	// Set the lastUpdated time using the atomic.Value Store method
+	cache.lastUpdated.Store(now.Add(-30 * time.Minute))
 
 	// Run the update
 	err := UpdateCommitCache()

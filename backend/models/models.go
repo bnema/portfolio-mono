@@ -21,7 +21,8 @@ type Tweet struct {
 }
 
 type Project struct {
-	Title   string `json:"title"`
-	Slug    string `json:"slug"`
-	Content string `json:"content"`
+	Title         string `json:"title"`
+	Slug          string `json:"slug"`
+	Content       string `json:"content"`
+	ProjectOrigin string `json:"project_origin"`
 }
