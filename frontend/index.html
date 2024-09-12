@@ -9,7 +9,20 @@
             content="Brice Amen - Golang and TypeScript developer"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+        <script>
+            (function () {
+                var theme =
+                    localStorage.getItem("theme") ||
+                    (window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark"
+                        : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+                document.documentElement.classList.toggle(
+                    "sl-theme-dark",
+                    theme === "dark",
+                );
+            })();
+        </script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
