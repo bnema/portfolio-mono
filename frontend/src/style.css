@@ -187,7 +187,7 @@ sl-card::part(base):hover {
 .socials a:hover {
     color: var(--link-color);
 }
-commit-list {
+activity-list {
     width: 100%;
     min-width: 300px; /* Ensures readability on smaller screens */
 }

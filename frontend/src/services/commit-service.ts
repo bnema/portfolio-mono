@@ -9,7 +9,7 @@ export class CommitService implements ActivityService {
   async fetchActivities(limit: number, page: number): Promise<Activity[]> {
     try {
       const response = await fetch(
-        `${this.apiUrl}/api/commits?limit=${limit}&page=${page}`,
+        `${this.apiUrl}/commits?limit=${limit}&page=${page}`,
       );
       console.log("Response:", response);
       if (!response.ok) {

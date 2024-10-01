@@ -1,6 +1,6 @@
 // src/components/activity-list.ts
 import { LitElement, html, css } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, state, query } from "lit/decorators.js";
 import { formatDistanceToNow } from "date-fns";
 import { Activity } from "../types/activity";
 import { CommitService } from "../services/commit-service";
@@ -14,12 +14,14 @@ export class ActivityList extends LitElement {
   @state() private page = 1;
   @state() private hasMore = true;
 
-  private services: ActivityService[];
-  private limit = 10;
+  @query("#sentinel") private sentinel!: HTMLElement;
 
+  private services: ActivityService[];
+  private intersectionObserver!: IntersectionObserver;
+  private limit = 10;
   constructor() {
     super();
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5432";
+    const apiUrl = import.meta.env.VITE_API_URL as string;
     this.services = [
       new CommitService(apiUrl),
       // TODO: Add more services here
@@ -28,7 +30,30 @@ export class ActivityList extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    this.setupIntersectionObserver();
     this.fetchActivities();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.intersectionObserver.disconnect();
+  }
+
+  private setupIntersectionObserver() {
+    this.intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && this.hasMore && !this.loading) {
+          this.loadMore();
+        }
+      },
+      { threshold: 0.1 },
+    );
+  }
+
+  firstUpdated() {
+    if (this.sentinel) {
+      this.intersectionObserver.observe(this.sentinel);
+    }
   }
 
   private async fetchActivities(loadMore = false) {
@@ -76,6 +101,7 @@ export class ActivityList extends LitElement {
         ${this.activities.map((activity) => this.renderActivity(activity))}
       </ul>
       ${this.loading ? html`<p>Loading activities...</p>` : ""}
+      <div id="sentinel"></div>
       ${this.hasMore && !this.loading
         ? html` <button @click=${this.loadMore}>Load More</button> `
         : ""}
