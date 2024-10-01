@@ -1,58 +1,62 @@
+// src/components/activity-list.ts
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { formatDistanceToNow } from "date-fns";
-import { Commit } from "./types.ts";
-import { CommitService } from "./commit-service";
+import { Activity } from "../types/activity";
+import { CommitService } from "../services/commit-service";
+import { ActivityService } from "../services/activity-service";
 
-@customElement("commit-list")
-export class CommitList extends LitElement {
-  @state() private commits: Commit[] = [];
+@customElement("activity-list")
+export class ActivityList extends LitElement {
+  @state() private activities: Activity[] = [];
   @state() private loading = false;
   @state() private error: string | null = null;
   @state() private page = 1;
   @state() private hasMore = true;
-  @state() private newestCommitId: string | null = null;
-  @state() private abortController: AbortController | null = null;
 
-  private commitService: CommitService;
+  private services: ActivityService[];
   private limit = 10;
-  private refreshInterval: number | null = null;
 
   constructor() {
     super();
-    this.commitService = new CommitService(import.meta.env.VITE_API_URL);
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5432";
+    this.services = [
+      new CommitService(apiUrl),
+      // TODO: Add more services here
+    ];
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.fetchInitialCommits();
-    this.setupInfiniteScroll();
-    this.setupRefreshInterval();
+    this.fetchActivities();
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.teardownInfiniteScroll();
-    this.clearRefreshInterval();
-    if (this.abortController) {
-      this.abortController.abort();
-    }
-  }
+  private async fetchActivities(loadMore = false) {
+    if (this.loading || (!loadMore && this.activities.length > 0)) return;
 
-  private async fetchInitialCommits() {
     this.loading = true;
+    this.error = null;
+
     try {
-      const data = await this.commitService.fetchCommits(
-        1,
-        this.limit,
-        new AbortController().signal,
+      const activitiesPromises = this.services.map((service) =>
+        service.fetchActivities(this.limit, this.page),
       );
-      this.commits = data.commits;
-      if (this.commits.length > 0) {
-        this.newestCommitId = this.commits[0].id;
+      const activitiesArrays = await Promise.all(activitiesPromises);
+      const newActivities = activitiesArrays
+        .flat()
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+
+      if (loadMore) {
+        this.activities = [...this.activities, ...newActivities];
+      } else {
+        this.activities = newActivities;
       }
-      this.hasMore = this.commits.length < data.total_count;
-      this.page = 2;
+
+      this.hasMore = newActivities.length === this.limit;
+      this.page++;
     } catch (e) {
       this.error = e instanceof Error ? e.message : "An unknown error occurred";
     } finally {
@@ -60,186 +64,91 @@ export class CommitList extends LitElement {
     }
   }
 
-  private async fetchCommits() {
-    if (this.loading || !this.hasMore) return;
-
-    this.loading = true;
-    if (this.abortController) {
-      this.abortController.abort();
-    }
-    this.abortController = new AbortController();
-
-    try {
-      const data = await this.commitService.fetchCommits(
-        this.page,
-        this.limit,
-        this.abortController.signal,
-      );
-      const newCommits = data.commits.map((commit) => ({
-        ...commit,
-        isNew: false,
-      }));
-      this.commits = [...this.commits, ...newCommits];
-      this.hasMore = this.commits.length < data.total_count;
-      this.page++;
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        this.error =
-          e instanceof Error ? e.message : "An unknown error occurred";
-      }
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  private async refreshCommits() {
-    if (this.loading) return;
-
-    if (this.abortController) {
-      this.abortController.abort();
-    }
-
-    this.abortController = new AbortController();
-    this.loading = true;
-
-    try {
-      const data = await this.commitService.fetchCommits(
-        1,
-        this.limit,
-        this.abortController.signal,
-      );
-      this.updateCommits(data.commits);
-      this.hasMore = this.commits.length < data.total_count;
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        this.error =
-          e instanceof Error ? e.message : "An unknown error occurred";
-      }
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  private updateCommits(newCommits: Commit[]) {
-    if (newCommits.length === 0) return;
-
-    const updatedCommits = [...this.commits];
-    let newCommitsAdded = 0;
-
-    for (const commit of newCommits) {
-      if (!this.newestCommitId || commit.id !== this.newestCommitId) {
-        updatedCommits.unshift({ ...commit, isNew: true });
-        newCommitsAdded++;
-      } else {
-        break;
-      }
-    }
-
-    if (newCommitsAdded > 0) {
-      this.commits = updatedCommits;
-      this.newestCommitId = this.commits[0].id;
-
-      setTimeout(() => {
-        this.commits = this.commits.map((commit, index) => ({
-          ...commit,
-          isNew: index < newCommitsAdded ? false : commit.isNew,
-        }));
-      }, 500);
-    }
-  }
-
-  private setupInfiniteScroll() {
-    window.addEventListener("scroll", this.handleScroll);
-  }
-
-  private teardownInfiniteScroll() {
-    window.removeEventListener("scroll", this.handleScroll);
-  }
-
-  private handleScroll = () => {
-    const scrollY = window.scrollY;
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
-
-    if (scrollY + windowHeight >= documentHeight - 200) {
-      this.fetchCommits();
-    }
-  };
-
-  private setupRefreshInterval() {
-    this.refreshInterval = setInterval(() => {
-      this.refreshCommits();
-    }, 60000);
-  }
-
-  private clearRefreshInterval() {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-    }
+  private loadMore() {
+    this.fetchActivities(true);
   }
 
   render() {
     return html`
       <h1>Latest activity</h1>
+      ${this.error ? html`<p class="error">Error: ${this.error}</p>` : ""}
       <ul>
-        ${this.commits.map((commit) => this.renderCommit(commit))}
+        ${this.activities.map((activity) => this.renderActivity(activity))}
       </ul>
-      <div class="load-more">
-        <button @click=${this.fetchCommits} ?disabled=${this.loading}>
-          Load more
-        </button>
-      </div>
-      ${this.renderStatus()}
+      ${this.loading ? html`<p>Loading activities...</p>` : ""}
+      ${this.hasMore && !this.loading
+        ? html` <button @click=${this.loadMore}>Load More</button> `
+        : ""}
     `;
   }
 
-  private renderCommit(commit: Commit) {
+  private renderActivity(activity: Activity) {
     return html`
-      <li class="${commit.isNew ? "new-commit" : ""}">
-        <div class="commit-header starship-style">
+      <li>
+        <div class="activity-header starship-style">
           <span class="user">brice</span>
           <span class="separator">in</span>
-          ${commit.is_private
+          ${activity.isPrivate
             ? html`<sl-icon
                 name="lock-fill"
-                title="Private repository"
+                title="Private activity"
               ></sl-icon>`
             : ""}
           <a
-            href=${commit.url}
+            href=${activity.url || "#"}
             target="_blank"
             rel="noopener noreferrer"
-            class="repo ${commit.is_private ? "private-blur" : ""}"
+            class="activity-link ${activity.isPrivate ? "private-blur" : ""}"
           >
-            <sl-icon name="github"></sl-icon>
-            ${commit.repo_name}
+            <sl-icon
+              name=${this.getIconForActivityType(activity.type)}
+            ></sl-icon>
+            ${this.getActivityTypeLabel(activity.type)}
+            ${activity.type === "commit" && activity.metadata?.repoName
+              ? html` - ${activity.metadata.repoName}`
+              : ""}
           </a>
           <span class="timestamp"
-            >${this.formatTimestamp(commit.timestamp)}</span
+            >${this.formatTimestamp(activity.timestamp)}</span
           >
         </div>
-        <p class="${commit.is_private ? "private-blur" : ""}">
-          ${this.formatCommitMessage(commit.message)}
+        <p class="${activity.isPrivate ? "private-blur" : ""}">
+          ${this.formatActivityContent(activity.content)}
         </p>
       </li>
     `;
   }
 
-  private formatCommitMessage(message: string) {
-    return message
+  private getIconForActivityType(type: string): string {
+    switch (type) {
+      case "commit":
+        return "github";
+      case "tweet":
+        return "twitter";
+      default:
+        return "activity";
+    }
+  }
+
+  private getActivityTypeLabel(type: string): string {
+    switch (type) {
+      case "commit":
+        return "GitHub";
+      case "tweet":
+        return "Twitter";
+      default:
+        return "Activity";
+    }
+  }
+
+  private formatActivityContent(content: string) {
+    return content
       .split("\n")
       .map((line) =>
         line.trim().startsWith("-")
           ? html`<span class="indented">${line}</span><br />`
           : html`${line}<br />`,
       );
-  }
-
-  private renderStatus() {
-    if (this.loading) return html`<p>Loading commits...</p>`;
-    if (this.error) return html`<p>Error: ${this.error}</p>`;
-    if (!this.hasMore) return html`<p>No more commits to load.</p>`;
-    return null;
   }
 
   private formatTimestamp(timestamp: string): string {
@@ -257,7 +166,7 @@ export class CommitList extends LitElement {
       filter: blur(2px);
     }
 
-    .commit-header sl-icon[name="lock"] {
+    .activity-header sl-icon[name="lock-fill"] {
       margin-right: 0.5em;
       color: var(--muted-color);
     }
@@ -266,7 +175,7 @@ export class CommitList extends LitElement {
       padding-left: 0.5em;
     }
 
-    .commit-header {
+    .activity-header {
       display: flex;
       align-items: center;
     }
@@ -300,11 +209,12 @@ export class CommitList extends LitElement {
       text-decoration: underline;
     }
 
-    .starship-style .repo {
-      color: var(--repo-color);
+    .starship-style .activity-link {
+      color: var(--activity-color);
       display: flex;
       align-items: center;
     }
+
     .starship-style sl-icon {
       margin-right: 0.3em;
     }
@@ -314,90 +224,47 @@ export class CommitList extends LitElement {
       color: var(--muted-color);
     }
 
-    .origin-info {
-      display: flex;
-      align-items: center;
-      color: var(--muted-color);
-      font-size: 0.9em;
-    }
-
-    .origin-info sl-icon {
-      margin-right: 0.5em;
-    }
-
-    .timestamp {
-      vertical-align: middle;
-    }
-
     ul {
       list-style-type: none;
       padding: 0;
     }
+
     li {
       margin-bottom: 2rem;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 0.5rem;
     }
+
     h1 {
       color: var(--heading-color);
       font-size: 1.6em;
       padding-bottom: 1rem;
     }
-    h2 {
-      color: var(--subheading-color);
-      margin: 0;
-      line-height: 1.5;
-    }
-    h2 img {
-      vertical-align: middle;
-      margin-right: 0.5rem;
-      opacity: 0.7;
-    }
-    h2 span {
-      color: var(--muted-color);
-      font-size: 0.8em;
-      vertical-align: middle;
-    }
-    a {
-      font-weight: 500;
-      color: var(--text-color);
-      text-decoration: inherit;
-      transition: color 0.2s;
-    }
-    a:hover {
-      color: var(--link-hover-color);
+
+    button {
+      background-color: var(--button-bg-color, #4a4a4a);
+      color: var(--button-text-color, white);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 1em;
     }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    button:hover {
+      background-color: var(--button-hover-bg-color, #5a5a5a);
     }
 
-    .load-more {
-      text-align: center;
-      margin-top: 2rem;
-    }
-
-    .load-more button {
-      padding: 0.5rem 1rem;
-      font-size: 0.8em;
-      rounded: 1rem;
-    }
-
-    .new-commit {
-      animation: fadeIn 1s ease-out;
+    .error {
+      color: var(--error-color, red);
+      font-weight: bold;
     }
   `;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "commit-list": CommitList;
+    "activity-list": ActivityList;
   }
 }
